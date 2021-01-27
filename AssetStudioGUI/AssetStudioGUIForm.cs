@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using AssetStudio.hpf;
 using static AssetStudioGUI.Studio;
 using Font = AssetStudio.Font;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
@@ -150,7 +151,27 @@ namespace AssetStudioGUI
             }
         }
 
+<<<<<<< Updated upstream
         private async void extractFileToolStripMenuItem_Click(object sender, EventArgs e)
+=======
+        private async void loadHPFMenuItem_Click(object sender, EventArgs e)
+        {
+            var openFolderDialog = new OpenFolderDialog();
+            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                ResetForm();
+
+                var list=HPFHelper.Run(openFolderDialog.Folder);
+
+
+                await Task.Run(() => assetsManager.LoadReaders(list));
+                BuildAssetStructures();
+
+            }
+        }
+
+        private void extractFileToolStripMenuItem_Click(object sender, EventArgs e)
+>>>>>>> Stashed changes
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -205,13 +226,18 @@ namespace AssetStudioGUI
 
             assetListView.VirtualListSize = visibleAssets.Count;
 
-            sceneTreeView.BeginUpdate();
-            sceneTreeView.Nodes.AddRange(treeNodeCollection.ToArray());
-            foreach (var node in treeNodeCollection)
+            if (sceneTreeView != null)
             {
-                node.HideCheckBox();
+                sceneTreeView.BeginUpdate();
+                sceneTreeView.Nodes.AddRange(treeNodeCollection.ToArray());
+                foreach (var node in treeNodeCollection)
+                {
+                    node.HideCheckBox();
+                }
+
+                sceneTreeView.EndUpdate();
             }
-            sceneTreeView.EndUpdate();
+
             treeNodeCollection.Clear();
 
             classesListView.BeginUpdate();
@@ -273,7 +299,7 @@ namespace AssetStudioGUI
 
         private void AssetStudioForm_KeyDown(object sender, KeyEventArgs e)
         {
-            if (glControl1.Visible)
+            if (glControl1!=null && glControl1.Visible)
             {
                 if (e.Control)
                 {
@@ -298,7 +324,7 @@ namespace AssetStudioGUI
                     }
                 }
             }
-            else if (previewPanel.Visible)
+            else if (previewPanel!=null && previewPanel.Visible)
             {
                 if (e.Control)
                 {
@@ -631,7 +657,16 @@ namespace AssetStudioGUI
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             FMODpanel.Visible = false;
+<<<<<<< Updated upstream
             glControl1.Visible = false;
+=======
+            if (glControl1!=null)
+            {
+                glControl1.Visible = false;
+            }
+
+            lastLoadedAsset = null;
+>>>>>>> Stashed changes
             StatusStripUpdate("");
 
             FMODreset();
@@ -1211,7 +1246,11 @@ namespace AssetStudioGUI
             assemblyLoader.Clear();
             exportableAssets.Clear();
             visibleAssets.Clear();
-            sceneTreeView.Nodes.Clear();
+            if (sceneTreeView!=null)
+            {
+                sceneTreeView.Nodes.Clear();
+            }
+
             assetListView.VirtualListSize = 0;
             assetListView.Items.Clear();
             classesListView.Items.Clear();
@@ -1223,7 +1262,11 @@ namespace AssetStudioGUI
             assetInfoLabel.Text = null;
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
-            glControl1.Visible = false;
+            if (glControl1 != null)
+            {
+                glControl1.Visible = false;
+            }
+
             lastSelectedItem = null;
             sortColumn = -1;
             reverseSort = false;

@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -114,6 +116,10 @@
     <Compile Include="Extensions\BinaryWriterExtensions.cs" />
     <Compile Include="Extensions\StreamExtensions.cs" />
     <Compile Include="FileIdentifier.cs" />
+    <Compile Include="hpf\AssetInfoManager.cs" />
+    <Compile Include="hpf\HPFHelper.cs" />
+    <Compile Include="hpf\PlatformMsgManager.cs" />
+    <Compile Include="hpf\Verifier.cs" />
     <Compile Include="IImported.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="ImportHelper.cs" />
