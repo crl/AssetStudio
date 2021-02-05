@@ -1,5 +1,5 @@
 ﻿using AssetStudio;
-using Newtonsoft.Json;
+using AssetStudio.hpf;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
@@ -17,7 +17,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
-using AssetStudio.hpf;
 using static AssetStudioGUI.Studio;
 using Font = AssetStudio.Font;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
@@ -151,9 +150,6 @@ namespace AssetStudioGUI
             }
         }
 
-<<<<<<< Updated upstream
-        private async void extractFileToolStripMenuItem_Click(object sender, EventArgs e)
-=======
         private async void loadHPFMenuItem_Click(object sender, EventArgs e)
         {
             var openFolderDialog = new OpenFolderDialog();
@@ -171,7 +167,6 @@ namespace AssetStudioGUI
         }
 
         private void extractFileToolStripMenuItem_Click(object sender, EventArgs e)
->>>>>>> Stashed changes
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -657,16 +652,12 @@ namespace AssetStudioGUI
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             FMODpanel.Visible = false;
-<<<<<<< Updated upstream
-            glControl1.Visible = false;
-=======
             if (glControl1!=null)
             {
                 glControl1.Visible = false;
             }
 
             lastLoadedAsset = null;
->>>>>>> Stashed changes
             StatusStripUpdate("");
 
             FMODreset();

@@ -34,15 +34,12 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-<<<<<<< Updated upstream
-=======
     <Reference Include="AssetStudioFBX">
       <HintPath>..\libs\AssetStudioFBX.dll</HintPath>
     </Reference>
     <Reference Include="dnlib">
       <HintPath>Libraries\dnlib.dll</HintPath>
     </Reference>
->>>>>>> Stashed changes
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -52,19 +49,8 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-<<<<<<< Updated upstream
-    <Reference Include="Unity.Cecil">
-      <HintPath>Libraries\Unity.Cecil.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.CecilTools">
-      <HintPath>Libraries\Unity.CecilTools.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.SerializationLogic">
-      <HintPath>Libraries\Unity.SerializationLogic.dll</HintPath>
-=======
     <Reference Include="Texture2DDecoder">
       <HintPath>..\libs\Texture2DDecoder.dll</HintPath>
->>>>>>> Stashed changes
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -101,28 +87,10 @@
     <Compile Include="Texture2DExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-<<<<<<< Updated upstream
-    <ProjectReference Include="..\AssetStudio.PInvoke\AssetStudio.PInvoke.csproj">
-      <Project>{40c796b5-88ce-4adc-acd6-2f4862b7f136}</Project>
-      <Name>AssetStudio.PInvoke</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\AssetStudioFBXWrapper\AssetStudioFBXWrapper.csproj">
-      <Project>{bd76e63f-1517-47fa-8233-33e853a3acee}</Project>
-      <Name>AssetStudioFBXWrapper</Name>
-    </ProjectReference>
-=======
->>>>>>> Stashed changes
     <ProjectReference Include="..\AssetStudio\AssetStudio.csproj">
       <Project>{7662f8c2-7bfd-442e-a948-a43b4f7eb06e}</Project>
       <Name>AssetStudio</Name>
     </ProjectReference>
-<<<<<<< Updated upstream
-    <ProjectReference Include="..\Texture2DDecoderWrapper\Texture2DDecoderWrapper.csproj">
-      <Project>{2afce830-b463-49b3-a026-877e5eafc0a4}</Project>
-      <Name>Texture2DDecoderWrapper</Name>
-    </ProjectReference>
-=======
->>>>>>> Stashed changes
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
