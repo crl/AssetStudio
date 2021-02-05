@@ -190,7 +190,7 @@
             this.extractFileToolStripMenuItem.Name = "extractFileToolStripMenuItem";
             this.extractFileToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
             this.extractFileToolStripMenuItem.Text = "Extract file";
-            this.extractFileToolStripMenuItem.Click += new System.EventHandler(this.extractFileToolStripMenuItem_Click);
+            this.extractFileToolStripMenuItem.Click += new System.EventHandler(this.extractFileToolStripMenuItem_ClickAsync);
             // 
             // extractFolderToolStripMenuItem
             // 
