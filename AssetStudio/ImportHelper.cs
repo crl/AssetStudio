@@ -69,7 +69,7 @@ namespace AssetStudio
             return CheckFileType(reader);
         }
 
-        public static FileType CheckFileType(EndianBinaryReader reader)
+        private static FileType CheckFileType(EndianBinaryReader reader)
         {
             var signature = reader.ReadStringToNull(20);
             reader.Position = 0;

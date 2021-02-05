@@ -1,5 +1,5 @@
 ﻿using AssetStudio;
-using AssetStudio.hpf;
+using Newtonsoft.Json;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
@@ -150,23 +150,7 @@ namespace AssetStudioGUI
             }
         }
 
-        private async void loadHPFMenuItem_Click(object sender, EventArgs e)
-        {
-            var openFolderDialog = new OpenFolderDialog();
-            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                ResetForm();
-
-                var list=HPFHelper.Run(openFolderDialog.Folder);
-
-
-                await Task.Run(() => assetsManager.LoadReaders(list));
-                BuildAssetStructures();
-
-            }
-        }
-
-        private void extractFileToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void extractFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -221,18 +205,13 @@ namespace AssetStudioGUI
 
             assetListView.VirtualListSize = visibleAssets.Count;
 
-            if (sceneTreeView != null)
+            sceneTreeView.BeginUpdate();
+            sceneTreeView.Nodes.AddRange(treeNodeCollection.ToArray());
+            foreach (var node in treeNodeCollection)
             {
-                sceneTreeView.BeginUpdate();
-                sceneTreeView.Nodes.AddRange(treeNodeCollection.ToArray());
-                foreach (var node in treeNodeCollection)
-                {
-                    node.HideCheckBox();
-                }
-
-                sceneTreeView.EndUpdate();
+                node.HideCheckBox();
             }
-
+            sceneTreeView.EndUpdate();
             treeNodeCollection.Clear();
 
             classesListView.BeginUpdate();
@@ -294,7 +273,7 @@ namespace AssetStudioGUI
 
         private void AssetStudioForm_KeyDown(object sender, KeyEventArgs e)
         {
-            if (glControl1!=null && glControl1.Visible)
+            if (glControl1.Visible)
             {
                 if (e.Control)
                 {
@@ -319,7 +298,7 @@ namespace AssetStudioGUI
                     }
                 }
             }
-            else if (previewPanel!=null && previewPanel.Visible)
+            else if (previewPanel.Visible)
             {
                 if (e.Control)
                 {
@@ -652,12 +631,7 @@ namespace AssetStudioGUI
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             FMODpanel.Visible = false;
-            if (glControl1!=null)
-            {
-                glControl1.Visible = false;
-            }
-
-            lastLoadedAsset = null;
+            glControl1.Visible = false;
             StatusStripUpdate("");
 
             FMODreset();
@@ -1237,11 +1211,7 @@ namespace AssetStudioGUI
             assemblyLoader.Clear();
             exportableAssets.Clear();
             visibleAssets.Clear();
-            if (sceneTreeView!=null)
-            {
-                sceneTreeView.Nodes.Clear();
-            }
-
+            sceneTreeView.Nodes.Clear();
             assetListView.VirtualListSize = 0;
             assetListView.Items.Clear();
             classesListView.Items.Clear();
@@ -1253,11 +1223,7 @@ namespace AssetStudioGUI
             assetInfoLabel.Text = null;
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
-            if (glControl1 != null)
-            {
-                glControl1.Visible = false;
-            }
-
+            glControl1.Visible = false;
             lastSelectedItem = null;
             sortColumn = -1;
             reverseSort = false;

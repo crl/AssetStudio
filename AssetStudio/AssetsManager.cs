@@ -32,19 +32,6 @@ namespace AssetStudio
             Load(toReadFile);
         }
 
-        public void LoadReaders(List<EndianBinaryReader> list)
-        {
-            var i = 0;
-            foreach (var reader in list)
-            {
-                var oldpos = reader.Position;
-                var signature = reader.ReadStringToNull(20);
-                reader.Position = oldpos;
-                LoadBundleFile("test" + i, reader);
-                i++;
-            }
-        }
-
         private void Load(string[] files)
         {
             foreach (var file in files)
@@ -355,7 +342,7 @@ namespace AssetStudio
                         }
                         assetsFile.AddObject(obj);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
                         /*var sb = new StringBuilder();
                         sb.AppendLine("Unable to load object")
