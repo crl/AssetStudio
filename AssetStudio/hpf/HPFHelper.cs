@@ -8,63 +8,49 @@ namespace AssetStudio.hpf
     public class HPFHelper
     {
         private static List<string> hpfs = new List<string>();
-        public static List<EndianBinaryReader> Run(string folder)
+
+        public static void Run(string folder)
         {
-            var result=new List<EndianBinaryReader>();
-            var files = Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories).ToList();
+            var files = Directory.GetFiles(folder, "*.hpf", SearchOption.AllDirectories).ToList();
 
-            var filePath = Path.Combine(folder, "version");
-            if (File.Exists(filePath) == false)
+            if (files.Count == 0)
             {
-                return result;
+                return;
             }
-
-            var bytes = File.ReadAllBytes(filePath);
-            if (bytes.Length == 0)
-            {
-                return result;
-            }
-            AssetInfoManager.Setup(bytes);
-
             PlatformMsgManager.CloseAllHpf();
 
-            for (int i = 0; i < 30; i++)
+            var savePrefix = Path.Combine(folder, "exports");
+
+            if (Directory.Exists(savePrefix)==false)
             {
-                filePath = Path.Combine(folder, $"GameData{i}.hpf");
-                if (File.Exists(filePath) == false)
-                {
-                    break;
-                }
-                hpfs.Add(filePath);
-                var index=PlatformMsgManager.OpenHpf(filePath, 0, 0, 0);
-                Console.WriteLine($"{filePath}: {index}");
+                Directory.CreateDirectory(savePrefix);
             }
-            //PlatformMsgManager.CloseAllHpf();
-
-
-            var list=AssetInfoManager.GetAll_AB_crc();
-
-            foreach(var item in list)
+            Progress.Reset();
+            int i = 0;
+            foreach (var file in files)
             {
-                long i=PlatformMsgManager.GetFileOffsetInHpf(item.ToString(), 0);
-
-                int index = (int)(i >> 32);
-                ulong offset = (ulong)(i & 0x00000000FFFFFFFFL);
-
-                if(index>-1 && index < hpfs.Count)
+                var item = file.Replace("\\", "/");
+                var name = Path.GetFileNameWithoutExtension(item);
+                var savePath = Path.Combine(savePrefix, name).Replace("\\","/");
+                if (Directory.Exists(savePath)==false)
                 {
-                    var reader = getReader(index);
-                    reader.Position =(long)offset;
-
-                    result.Add(reader);
-
-
-                    //if(result.Count>100)break;
-                    
+                    Directory.CreateDirectory(savePath);
                 }
-            }
 
-            return result;
+                var result =PlatformMsgManager.ExportHpfFiles(item, 0, savePath, callback);
+                Console.WriteLine("export {0} to {1} ={2}", item, savePath, result);
+
+                Progress.Report(i++, files.Count);
+            }
+        }
+
+        private static void callback(int a, int b, string msg)
+        {
+            if (a == b)
+            {
+                Console.WriteLine("export error:{0}", msg);
+            }
+           
         }
 
         private static EndianBinaryReader getReader(int index)

@@ -151,19 +151,14 @@ namespace AssetStudioGUI
             }
         }
 
-        private async void loadHPFMenuItem_Click(object sender, EventArgs e)
+        private void loadHPFMenuItem_Click(object sender, EventArgs e)
         {
             var openFolderDialog = new OpenFolderDialog();
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
             {
                 ResetForm();
 
-                var list = HPFHelper.Run(openFolderDialog.Folder);
-
-
-                await Task.Run(() => assetsManager.LoadReaders(list));
-                BuildAssetStructures();
-
+                HPFHelper.Run(openFolderDialog.Folder);
             }
         }
 
@@ -2000,6 +1995,11 @@ namespace AssetStudioGUI
             {
                 dumpTextBox.Text = DumpAsset(lastSelectedItem.Asset);
             }
+        }
+
+        private void extractHPFToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            loadHPFMenuItem_Click(sender, e);
         }
 
         private void glControl1_MouseWheel(object sender, MouseEventArgs e)

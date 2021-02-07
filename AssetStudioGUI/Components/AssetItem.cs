@@ -1,5 +1,7 @@
-﻿using System.Windows.Forms;
+﻿using System;
+using System.Windows.Forms;
 using AssetStudio;
+using Object = AssetStudio.Object;
 
 namespace AssetStudioGUI
 {
@@ -26,6 +28,24 @@ namespace AssetStudioGUI
             FullSize = asset.byteSize;
         }
 
+        private string GetFullSize()
+        {
+            float size = FullSize;
+            if (size > 1024)
+            {
+                size /= 1024;
+                if (size > 512)
+                {
+                    size /= 1024;
+                    return Math.Round(size,2)+ "m";
+                }
+
+                return Math.Round(size,2) + "k";
+            }
+
+            return FullSize.ToString();
+        }
+
         public void SetSubItems()
         {
             SubItems.AddRange(new[]
@@ -33,7 +53,7 @@ namespace AssetStudioGUI
                 Container, //Container
                 TypeString, //Type
                 m_PathID.ToString(), //PathID
-                FullSize.ToString(), //Size
+                GetFullSize(), //Size
             });
         }
     }

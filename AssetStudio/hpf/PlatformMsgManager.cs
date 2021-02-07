@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace AssetStudio.hpf
 {
@@ -12,5 +13,10 @@ namespace AssetStudio.hpf
 
         [DllImport("HpfSys")]
         public static extern long GetFileOffsetInHpf(string strFilePath, int iThread);
+
+        public delegate void CallBackDelegate(int a, int b, string msg);
+
+        [DllImport("HpfSys")]
+        public static extern int ExportHpfFiles(string strFilePath, long offset, string strDesDir, CallBackDelegate dele);
     }
 }
