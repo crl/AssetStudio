@@ -40,7 +40,7 @@ namespace AssetStudio.hpf
                 var result =PlatformMsgManager.ExportHpfFiles(item, 0, savePath, callback);
                 Console.WriteLine("export {0} to {1} ={2}", item, savePath, result);
 
-                Progress.Report(i++, files.Count);
+                Progress.Report(++i, files.Count);
             }
         }
 
