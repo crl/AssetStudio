@@ -38,10 +38,12 @@ namespace AssetStudio.hpf
                 }
 
                 var result =PlatformMsgManager.ExportHpfFiles(item, 0, savePath, callback);
-                Console.WriteLine("export {0} to {1} ={2}", item, savePath, result);
+                Logger.Info(string.Format("Export {0} to {1}", item, savePath));
 
                 Progress.Report(++i, files.Count);
             }
+
+            Logger.Info("Ready to go");
         }
 
         private static void callback(int a, int b, string msg)

@@ -151,14 +151,14 @@ namespace AssetStudioGUI
             }
         }
 
-        private void loadHPFMenuItem_Click(object sender, EventArgs e)
+        private async void loadHPFMenuItem_Click(object sender, EventArgs e)
         {
             var openFolderDialog = new OpenFolderDialog();
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
             {
                 ResetForm();
 
-                HPFHelper.Run(openFolderDialog.Folder);
+                await Task.Run(() => HPFHelper.Run(openFolderDialog.Folder));
             }
         }
 
