@@ -17,6 +17,6 @@ namespace AssetStudio.hpf
         public delegate void CallBackDelegate(int a, int b, string msg);
 
         [DllImport("HpfSys")]
-        public static extern int ExportHpfFiles(string strFilePath, long offset, string strDesDir, CallBackDelegate dele);
+        public static extern int ExportHpfFiles(string strFilePath, long offset, string strDesDir, CallBackDelegate dele,bool isDelete);
     }
 }

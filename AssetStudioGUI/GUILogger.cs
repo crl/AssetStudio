@@ -18,6 +18,8 @@ namespace AssetStudioGUI
         public void Log(LoggerEvent loggerEvent, string message)
         {
             action(message);
+
+            Console.WriteLine(message);
         }
     }
 }

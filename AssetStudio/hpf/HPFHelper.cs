@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace AssetStudio.hpf
 {
@@ -27,18 +29,31 @@ namespace AssetStudio.hpf
             }
             Progress.Reset();
             int i = 0;
+            var sb = new StringBuilder();
             foreach (var file in files)
             {
                 var item = file.Replace("\\", "/");
                 var name = Path.GetFileNameWithoutExtension(item);
-                var savePath = Path.Combine(savePrefix, name).Replace("\\","/");
-                if (Directory.Exists(savePath)==false)
+                var savePath = Path.Combine(savePrefix, name).Replace("\\", "/");
+                if (Directory.Exists(savePath) == false)
                 {
                     Directory.CreateDirectory(savePath);
                 }
 
-                var result =PlatformMsgManager.ExportHpfFiles(item, 0, savePath, callback);
-                Logger.Info(string.Format("Export {0} to {1}", item, savePath));
+                sb.Clear();
+                var md5 = new MD5CryptoServiceProvider();
+                using (var io = File.OpenRead(item))
+                {
+                    var bytes = md5.ComputeHash(io);
+
+                    for (int j = 0, len = bytes.Length; j < len; j++)
+                    {
+                        sb.Append(bytes[j].ToString("x2"));
+                    }
+                }
+
+                var result = PlatformMsgManager.ExportHpfFiles(item, 0, savePath, callback, false);
+                Logger.Info(string.Format("Export {0} to {1} md5:{2}", item, savePath, sb.ToString()));
 
                 Progress.Report(++i, files.Count);
             }
