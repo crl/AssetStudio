@@ -151,14 +151,41 @@ namespace AssetStudioGUI
             }
         }
 
-        private async void loadHPFMenuItem_Click(object sender, EventArgs e)
+        private async void loadHPFFolder_Click(object sender, EventArgs e)
         {
             var openFolderDialog = new OpenFolderDialog();
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
             {
                 ResetForm();
 
-                await Task.Run(() => HPFHelper.Run(openFolderDialog.Folder));
+                await Task.Run(() => HPFHelper.RunFolder(openFolderDialog.Folder));
+            }
+        }
+
+        private async void loadHPF_Click(object sender, EventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog();
+            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                ResetForm();
+                var file = openFileDialog.FileName;
+                var folder = Path.GetDirectoryName(file);
+                var savePrefix = Path.Combine(folder, "exports");
+
+
+                var item = file.Replace("\\", "/");
+                var name = Path.GetFileNameWithoutExtension(item);
+                var savePath = Path.Combine(savePrefix, name).Replace("\\", "/");
+
+                if (Directory.Exists(savePath))
+                {
+                    Directory.Delete(savePath,true);
+                }
+
+
+                await Task.Run(() => HPFHelper.RunFile(openFileDialog.FileName, savePrefix));
+                await Task.Run(() => assetsManager.LoadFolder(savePath));
+                BuildAssetStructures();
             }
         }
 
@@ -1999,7 +2026,12 @@ namespace AssetStudioGUI
 
         private void extractHPFToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            loadHPFMenuItem_Click(sender, e);
+            loadHPFFolder_Click(sender, e);
+        }
+
+        private void extractHPFToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            loadHPF_Click(sender, e);
         }
 
         private void glControl1_MouseWheel(object sender, MouseEventArgs e)

@@ -37,6 +37,7 @@
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.extractFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.extractFolderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.extractHPFToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.displayAll = new System.Windows.Forms.ToolStripMenuItem();
             this.enablePreview = new System.Windows.Forms.ToolStripMenuItem();
@@ -118,7 +119,7 @@
             this.exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.extractHPFToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.extractHPFToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -163,6 +164,7 @@
             this.toolStripMenuItem1,
             this.extractFileToolStripMenuItem,
             this.extractFolderToolStripMenuItem,
+            this.extractHPFToolStripMenuItem1,
             this.extractHPFToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(39, 21);
@@ -200,6 +202,13 @@
             this.extractFolderToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.extractFolderToolStripMenuItem.Text = "Extract folder";
             this.extractFolderToolStripMenuItem.Click += new System.EventHandler(this.extractFolderToolStripMenuItem_Click);
+            // 
+            // extractHPFToolStripMenuItem
+            // 
+            this.extractHPFToolStripMenuItem.Name = "extractHPFToolStripMenuItem";
+            this.extractHPFToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.extractHPFToolStripMenuItem.Text = "ExtractHPF folder";
+            this.extractHPFToolStripMenuItem.Click += new System.EventHandler(this.extractHPFToolStripMenuItem_Click);
             // 
             // optionsToolStripMenuItem
             // 
@@ -992,12 +1001,12 @@
             this.showOriginalFileToolStripMenuItem.Visible = false;
             this.showOriginalFileToolStripMenuItem.Click += new System.EventHandler(this.showOriginalFileToolStripMenuItem_Click);
             // 
-            // extractHPFToolStripMenuItem
+            // extractHPFToolStripMenuItem1
             // 
-            this.extractHPFToolStripMenuItem.Name = "extractHPFToolStripMenuItem";
-            this.extractHPFToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.extractHPFToolStripMenuItem.Text = "ExtractHPF";
-            this.extractHPFToolStripMenuItem.Click += new System.EventHandler(this.extractHPFToolStripMenuItem_Click);
+            this.extractHPFToolStripMenuItem1.Name = "extractHPFToolStripMenuItem1";
+            this.extractHPFToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
+            this.extractHPFToolStripMenuItem1.Text = "ExtractHPF";
+            this.extractHPFToolStripMenuItem1.Click += new System.EventHandler(this.extractHPFToolStripMenuItem1_Click);
             // 
             // AssetStudioGUIForm
             // 
@@ -1140,6 +1149,7 @@
         private System.Windows.Forms.TabPage tabPage5;
         private System.Windows.Forms.TextBox dumpTextBox;
         private System.Windows.Forms.ToolStripMenuItem extractHPFToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem extractHPFToolStripMenuItem1;
     }
 }
 
