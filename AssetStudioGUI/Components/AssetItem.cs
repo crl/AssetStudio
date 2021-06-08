@@ -8,6 +8,7 @@ namespace AssetStudioGUI
     internal class AssetItem : ListViewItem
     {
         public Object Asset;
+        public string ab_hash;
         public SerializedFile SourceFile;
         public string Container = string.Empty;
         public string TypeString;
@@ -53,6 +54,7 @@ namespace AssetStudioGUI
                 Container, //Container
                 TypeString, //Type
                 m_PathID.ToString(), //PathID
+                ab_hash,
                 GetFullSize(), //Size
             });
         }

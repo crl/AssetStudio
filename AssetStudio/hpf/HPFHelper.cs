@@ -81,7 +81,7 @@ namespace AssetStudio.hpf
         {
             if (a == b)
             {
-                Console.WriteLine("export:{0}", msg);
+                Progress.Report(a, b);
             }
            
         }

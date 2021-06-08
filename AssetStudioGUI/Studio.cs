@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using static AssetStudioGUI.Exporter;
 using Object = AssetStudio.Object;
 
@@ -18,6 +18,18 @@ namespace AssetStudioGUI
         Convert,
         Raw,
         Dump
+    }
+
+    internal enum ExportFilter
+    {
+        All,
+        Selected,
+        Filtered
+    }
+
+    internal enum ExportListType
+    {
+        XML
     }
 
     internal static class Studio
@@ -101,10 +113,11 @@ namespace AssetStudioGUI
             int extractedCount = 0;
             foreach (var file in fileList)
             {
-                var filePath = Path.Combine(extractPath, file.fileName);
-                if (!Directory.Exists(extractPath))
+                var filePath = Path.Combine(extractPath, file.path);
+                var fileDirectory = Path.GetDirectoryName(filePath);
+                if (!Directory.Exists(fileDirectory))
                 {
-                    Directory.CreateDirectory(extractPath);
+                    Directory.CreateDirectory(fileDirectory);
                 }
                 if (!File.Exists(filePath))
                 {
@@ -134,6 +147,7 @@ namespace AssetStudioGUI
                 foreach (var asset in assetsFile.Objects)
                 {
                     var assetItem = new AssetItem(asset);
+                    assetItem.ab_hash = assetsFile.fileName;
                     objectAssetItemDic.Add(asset, assetItem);
                     assetItem.UniqueID = " #" + i;
                     var exportable = false;
@@ -328,27 +342,27 @@ namespace AssetStudioGUI
             {
                 if (typeMap.TryGetValue(assetsFile.unityVersion, out var curVer))
                 {
-                    foreach (var type in assetsFile.m_Types.Where(x => x.m_Nodes != null))
+                    foreach (var type in assetsFile.m_Types.Where(x => x.m_Type != null))
                     {
                         var key = type.classID;
                         if (type.m_ScriptTypeIndex >= 0)
                         {
                             key = -1 - type.m_ScriptTypeIndex;
                         }
-                        curVer[key] = new TypeTreeItem(key, type.m_Nodes);
+                        curVer[key] = new TypeTreeItem(key, type.m_Type);
                     }
                 }
                 else
                 {
                     var items = new SortedDictionary<int, TypeTreeItem>();
-                    foreach (var type in assetsFile.m_Types.Where(x => x.m_Nodes != null))
+                    foreach (var type in assetsFile.m_Types.Where(x => x.m_Type != null))
                     {
                         var key = type.classID;
                         if (type.m_ScriptTypeIndex >= 0)
                         {
                             key = -1 - type.m_ScriptTypeIndex;
                         }
-                        items[key] = new TypeTreeItem(key, type.m_Nodes);
+                        items[key] = new TypeTreeItem(key, type.m_Type);
                     }
                     typeMap.Add(assetsFile.unityVersion, items);
                 }
@@ -386,7 +400,14 @@ namespace AssetStudioGUI
                             }
                             break;
                         case 2: //source file
-                            exportPath = Path.Combine(savePath, asset.SourceFile.fullName + "_export");
+                            if (string.IsNullOrEmpty(asset.SourceFile.originalPath))
+                            {
+                                exportPath = Path.Combine(savePath, asset.SourceFile.fileName + "_export");
+                            }
+                            else
+                            {
+                                exportPath = Path.Combine(savePath, Path.GetFileName(asset.SourceFile.originalPath) + "_export", asset.SourceFile.fileName);
+                            }
                             break;
                         default:
                             exportPath = savePath;
@@ -436,6 +457,51 @@ namespace AssetStudioGUI
                 StatusStripUpdate(statusText);
 
                 if (Properties.Settings.Default.openAfterExport && exportedCount > 0)
+                {
+                    Process.Start(savePath);
+                }
+            });
+        }
+
+        public static void ExportAssetsList(string savePath, List<AssetItem> toExportAssets, ExportListType exportListType)
+        {
+            ThreadPool.QueueUserWorkItem(state =>
+            {
+                Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+
+                Progress.Reset();
+
+                switch (exportListType)
+                {
+                    case ExportListType.XML:
+                        var filename = Path.Combine(savePath, "assets.xml");
+                        var doc = new XDocument(
+                            new XElement("Assets",
+                                new XAttribute("filename", filename),
+                                new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
+                                toExportAssets.Select(
+                                    asset => new XElement("Asset",
+                                        new XElement("Name", asset.Text),
+                                        new XElement("Container", asset.Container),
+                                        new XElement("Type", new XAttribute("id", (int)asset.Type), asset.TypeString),
+                                        new XElement("PathID", asset.m_PathID),
+                                        new XElement("Source", asset.SourceFile.fullName),
+                                        new XElement("Size", asset.FullSize)
+                                    )
+                                )
+                            )
+                        );
+
+                        doc.Save(filename);
+
+                        break;
+                }
+
+                var statusText = $"Finished exporting asset list with {toExportAssets.Count()} items.";
+
+                StatusStripUpdate(statusText);
+
+                if (Properties.Settings.Default.openAfterExport && toExportAssets.Count() > 0)
                 {
                     Process.Start(savePath);
                 }
@@ -615,7 +681,7 @@ namespace AssetStudioGUI
             }
         }
 
-        public static List<TypeTreeNode> MonoBehaviourToTypeTreeNodes(MonoBehaviour m_MonoBehaviour)
+        public static TypeTree MonoBehaviourToTypeTree(MonoBehaviour m_MonoBehaviour)
         {
             if (!assemblyLoader.Loaded)
             {
@@ -630,7 +696,7 @@ namespace AssetStudioGUI
                     assemblyLoader.Loaded = true;
                 }
             }
-            return m_MonoBehaviour.ConvertToTypeTreeNodes(assemblyLoader);
+            return m_MonoBehaviour.ConvertToTypeTree(assemblyLoader);
         }
 
         public static string DumpAsset(Object obj)
@@ -638,8 +704,8 @@ namespace AssetStudioGUI
             var str = obj.Dump();
             if (str == null && obj is MonoBehaviour m_MonoBehaviour)
             {
-                var nodes = MonoBehaviourToTypeTreeNodes(m_MonoBehaviour);
-                str = m_MonoBehaviour.Dump(nodes);
+                var type = MonoBehaviourToTypeTree(m_MonoBehaviour);
+                str = m_MonoBehaviour.Dump(type);
             }
             return str;
         }
