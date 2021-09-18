@@ -86,8 +86,10 @@ namespace AssetStudioGUI
         [DllImport("gdi32.dll")]
         private static extern IntPtr AddFontMemResourceEx(IntPtr pbFont, uint cbFont, IntPtr pdv, [In] ref uint pcFonts);
 
-        public AssetStudioGUIForm()
+        private string[] args;
+        public AssetStudioGUIForm(string[] args)
         {
+            this.args = args;
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             InitializeComponent();
             Text = $"AssetStudioGUI v{Application.ProductVersion}";
@@ -184,7 +186,7 @@ namespace AssetStudioGUI
                 }
 
 
-                await Task.Run(() => HPFHelper.RunFile(openFileDialog.FileName, savePrefix));
+                await Task.Run(() => HPFHelper.RunFile(openFileDialog.FileName));
                 await Task.Run(() => assetsManager.LoadFolder(savePath));
                 BuildAssetStructures();
             }
