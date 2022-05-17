@@ -1,10 +1,10 @@
-﻿using System;
+﻿using K4os.Compression.LZ4;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lz4;
 
 namespace AssetStudio
 {
@@ -15,13 +15,11 @@ namespace AssetStudio
             if (shader.m_SubProgramBlob != null) //5.3 - 5.4
             {
                 var decompressedBytes = new byte[shader.decompressedSize];
-                using (var decoder = new Lz4DecoderStream(new MemoryStream(shader.m_SubProgramBlob)))
-                {
-                    decoder.Read(decompressedBytes, 0, (int)shader.decompressedSize);
-                }
+                LZ4Codec.Decode(shader.m_SubProgramBlob, decompressedBytes);
                 using (var blobReader = new BinaryReader(new MemoryStream(decompressedBytes)))
                 {
                     var program = new ShaderProgram(blobReader, shader.version);
+                    program.Read(blobReader, 0);
                     return header + program.Export(Encoding.UTF8.GetString(shader.m_Script));
                 }
             }
@@ -36,19 +34,25 @@ namespace AssetStudio
 
         private static string ConvertSerializedShader(Shader shader)
         {
-            var shaderPrograms = new ShaderProgram[shader.platforms.Length];
-            for (var i = 0; i < shader.platforms.Length; i++)
+            var length = shader.platforms.Length;
+            var shaderPrograms = new ShaderProgram[length];
+            for (var i = 0; i < length; i++)
             {
-                var compressedBytes = new byte[shader.compressedLengths[i]];
-                Buffer.BlockCopy(shader.compressedBlob, (int)shader.offsets[i], compressedBytes, 0, (int)shader.compressedLengths[i]);
-                var decompressedBytes = new byte[shader.decompressedLengths[i]];
-                using (var decoder = new Lz4DecoderStream(new MemoryStream(compressedBytes)))
+                for (var j = 0; j < shader.offsets[i].Length; j++)
                 {
-                    decoder.Read(decompressedBytes, 0, (int)shader.decompressedLengths[i]);
-                }
-                using (var blobReader = new BinaryReader(new MemoryStream(decompressedBytes)))
-                {
-                    shaderPrograms[i] = new ShaderProgram(blobReader, shader.version);
+                    var offset = shader.offsets[i][j];
+                    var compressedLength = shader.compressedLengths[i][j];
+                    var decompressedLength = shader.decompressedLengths[i][j];
+                    var decompressedBytes = new byte[decompressedLength];
+                    LZ4Codec.Decode(shader.compressedBlob, (int)offset, (int)compressedLength, decompressedBytes, 0, (int)decompressedLength);
+                    using (var blobReader = new BinaryReader(new MemoryStream(decompressedBytes)))
+                    {
+                        if (j == 0)
+                        {
+                            shaderPrograms[i] = new ShaderProgram(blobReader, shader.version);
+                        }
+                        shaderPrograms[i].Read(blobReader, j);
+                    }
                 }
             }
 
@@ -860,29 +864,49 @@ namespace AssetStudio
                                       "///////////////////////////////////////////\n";
     }
 
+    public class ShaderSubProgramEntry
+    {
+        public int Offset;
+        public int Length;
+        public int Segment;
+
+        public ShaderSubProgramEntry(BinaryReader reader, int[] version)
+        {
+            Offset = reader.ReadInt32();
+            Length = reader.ReadInt32();
+            if (version[0] > 2019 || (version[0] == 2019 && version[1] >= 3)) //2019.3 and up
+            {
+                Segment = reader.ReadInt32();
+            }
+        }
+    }
+
     public class ShaderProgram
     {
+        public ShaderSubProgramEntry[] entries;
         public ShaderSubProgram[] m_SubPrograms;
 
         public ShaderProgram(BinaryReader reader, int[] version)
         {
             var subProgramsCapacity = reader.ReadInt32();
-            m_SubPrograms = new ShaderSubProgram[subProgramsCapacity];
-            int entrySize;
-            if (version[0] > 2019 || (version[0] == 2019 && version[1] >= 3)) //2019.3 and up
-            {
-                entrySize = 12;
-            }
-            else
-            {
-                entrySize = 8;
-            }
+            entries = new ShaderSubProgramEntry[subProgramsCapacity];
             for (int i = 0; i < subProgramsCapacity; i++)
             {
-                reader.BaseStream.Position = 4 + i * entrySize;
-                var offset = reader.ReadInt32();
-                reader.BaseStream.Position = offset;
-                m_SubPrograms[i] = new ShaderSubProgram(reader);
+                entries[i] = new ShaderSubProgramEntry(reader, version);
+            }
+            m_SubPrograms = new ShaderSubProgram[subProgramsCapacity];
+        }
+
+        public void Read(BinaryReader reader, int segment)
+        {
+            for (int i = 0; i < entries.Length; i++)
+            {
+                var entry = entries[i];
+                if (entry.Segment == segment)
+                {
+                    reader.BaseStream.Position = entry.Offset;
+                    m_SubPrograms[i] = new ShaderSubProgram(reader);
+                }
             }
         }
 
@@ -915,7 +939,8 @@ namespace AssetStudio
             //201609010 - Unity 5.6, 2017.1 & 2017.2
             //201708220 - Unity 2017.3, Unity 2017.4 & Unity 2018.1
             //201802150 - Unity 2018.2 & Unity 2018.3
-            //201806140 - Unity 2019.1~2020.1
+            //201806140 - Unity 2019.1~2021.1
+            //202012090 - Unity 2021.2
             m_Version = reader.ReadInt32();
             m_ProgramType = (ShaderGpuProgramType)reader.ReadInt32();
             reader.BaseStream.Position += 12;
@@ -929,7 +954,7 @@ namespace AssetStudio
             {
                 m_Keywords[i] = reader.ReadAlignedString();
             }
-            if (m_Version >= 201806140)
+            if (m_Version >= 201806140 && m_Version < 202012090)
             {
                 var m_LocalKeywordsSize = reader.ReadInt32();
                 m_LocalKeywords = new string[m_LocalKeywordsSize];

@@ -1,6 +1,6 @@
-﻿using System;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 using AssetStudio;
+using System;
 using Object = AssetStudio.Object;
 
 namespace AssetStudioGUI
@@ -8,7 +8,6 @@ namespace AssetStudioGUI
     internal class AssetItem : ListViewItem
     {
         public Object Asset;
-        public string ab_hash;
         public SerializedFile SourceFile;
         public string Container = string.Empty;
         public string TypeString;
@@ -38,12 +37,10 @@ namespace AssetStudioGUI
                 if (size > 512)
                 {
                     size /= 1024;
-                    return Math.Round(size,2)+ "m";
+                    return Math.Round(size, 2) + "m";
                 }
-
-                return Math.Round(size,2) + "k";
+                return Math.Round(size, 2) + "k";
             }
-
             return FullSize.ToString();
         }
 
@@ -54,7 +51,6 @@ namespace AssetStudioGUI
                 Container, //Container
                 TypeString, //Type
                 m_PathID.ToString(), //PathID
-                ab_hash,
                 GetFullSize(), //Size
             });
         }
