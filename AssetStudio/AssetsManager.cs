@@ -18,6 +18,7 @@ namespace AssetStudio
 
         private List<string> importFiles = new List<string>();
         private HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public void LoadFiles(params string[] files)
@@ -54,6 +55,7 @@ namespace AssetStudio
 
             importFiles.Clear();
             importFilesHash.Clear();
+            noexistFiles.Clear();
             assetsFileListHash.Clear();
 
             ReadAssets();
@@ -110,6 +112,8 @@ namespace AssetStudio
                         if (!importFilesHash.Contains(sharedFileName))
                         {
                             var sharedFilePath = Path.Combine(Path.GetDirectoryName(reader.FullPath), sharedFileName);
+                            if (!noexistFiles.Contains(sharedFilePath))
+                            {
                             if (!File.Exists(sharedFilePath))
                             {
                                 var findFiles = Directory.GetFiles(Path.GetDirectoryName(reader.FullPath), sharedFileName, SearchOption.AllDirectories);
@@ -123,6 +127,11 @@ namespace AssetStudio
                             {
                                 importFiles.Add(sharedFilePath);
                                 importFilesHash.Add(sharedFileName);
+                                }
+                                else
+                                {
+                                    noexistFiles.Add(sharedFilePath);
+                                }
                             }
                         }
                     }

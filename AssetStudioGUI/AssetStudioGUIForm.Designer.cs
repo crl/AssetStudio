@@ -81,6 +81,7 @@
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.sceneTreeView = new AssetStudioGUI.GOHierarchy();
             this.treeSearch = new System.Windows.Forms.TextBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.assetListView = new System.Windows.Forms.ListView();
@@ -283,6 +284,7 @@
             // 
             // specifyUnityVersion
             // 
+            this.specifyUnityVersion.Font = new System.Drawing.Font("Microsoft YaHei UI", 9F);
             this.specifyUnityVersion.Name = "specifyUnityVersion";
             this.specifyUnityVersion.Size = new System.Drawing.Size(100, 30);
             // 
@@ -583,6 +585,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.sceneTreeView);
             this.tabPage1.Controls.Add(this.treeSearch);
             this.tabPage1.Location = new System.Drawing.Point(4, 33);
             this.tabPage1.Name = "tabPage1";
@@ -590,6 +593,17 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Scene Hierarchy";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // sceneTreeView
+            // 
+            this.sceneTreeView.CheckBoxes = true;
+            this.sceneTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.sceneTreeView.HideSelection = false;
+            this.sceneTreeView.Location = new System.Drawing.Point(0, 21);
+            this.sceneTreeView.Name = "sceneTreeView";
+            this.sceneTreeView.Size = new System.Drawing.Size(472, 587);
+            this.sceneTreeView.TabIndex = 1;
+            this.sceneTreeView.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.sceneTreeView_AfterCheck);
             // 
             // treeSearch
             // 
@@ -627,7 +641,8 @@
             this.assetListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.assetListView.FullRowSelect = true;
             this.assetListView.GridLines = true;
-            this.assetListView.Location = new System.Drawing.Point(0, 30);
+            this.assetListView.HideSelection = false;
+            this.assetListView.Location = new System.Drawing.Point(0, 21);
             this.assetListView.Name = "assetListView";
             this.assetListView.Size = new System.Drawing.Size(472, 560);
             this.assetListView.TabIndex = 1;
@@ -693,6 +708,7 @@
             this.columnHeader2});
             this.classesListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.classesListView.FullRowSelect = true;
+            this.classesListView.HideSelection = false;
             this.classesListView.Location = new System.Drawing.Point(0, 0);
             this.classesListView.MultiSelect = false;
             this.classesListView.Name = "classesListView";
@@ -923,17 +939,11 @@
             // 
             // glControl1
             // 
-            this.glControl1.API = OpenTK.Windowing.Common.ContextAPI.OpenGL;
-            this.glControl1.APIVersion = new System.Version(3, 3, 0, 0);
             this.glControl1.BackColor = System.Drawing.SystemColors.ControlDarkDark;
             this.glControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.glControl1.Flags = OpenTK.Windowing.Common.ContextFlags.Default;
-            this.glControl1.IsEventDriven = true;
             this.glControl1.Location = new System.Drawing.Point(0, 0);
-            this.glControl1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.glControl1.Name = "glControl1";
-            this.glControl1.Profile = OpenTK.Windowing.Common.ContextProfile.Core;
-            this.glControl1.Size = new System.Drawing.Size(768, 579);
+            this.glControl1.Size = new System.Drawing.Size(768, 606);
             this.glControl1.TabIndex = 4;
             this.glControl1.Visible = false;
             this.glControl1.VSync = false;
