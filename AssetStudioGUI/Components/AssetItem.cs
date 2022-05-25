@@ -37,11 +37,14 @@ namespace AssetStudioGUI
                 if (size > 512)
                 {
                     size /= 1024;
-                    return Math.Round(size, 2) + "m";
+                    return string.Format("{0}m~({1})", Math.Round(size, 2), FullSize);
                 }
-                return Math.Round(size, 2) + "k";
+                else
+                {
+                    return string.Format("{0}k~({1})", Math.Round(size, 2),FullSize);
+                }
             }
-            return FullSize.ToString();
+            return $"{FullSize}";
         }
 
         public void SetSubItems()

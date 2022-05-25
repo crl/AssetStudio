@@ -110,6 +110,15 @@ namespace AssetStudioGUI
             Logger.Default = logger;
             Progress.Default = new Progress<int>(SetProgressBarValue);
             Studio.StatusStripUpdate = StatusStripUpdate;
+
+
+            AddEnvironmentPaths(new[] { "libs" });
+        }
+        internal static void AddEnvironmentPaths(IEnumerable<string> paths)
+        {
+            var path = new[] { Environment.GetEnvironmentVariable("PATH") ?? string.Empty };
+            string newPath = string.Join(Path.PathSeparator.ToString(), path.Concat(paths));
+            Environment.SetEnvironmentVariable("PATH", newPath);   // 这种方式只会修改当前进程的环境变量
         }
 
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
@@ -133,7 +142,23 @@ namespace AssetStudioGUI
                 }
                 else
                 {
-                    await Task.Run(() => assetsManager.LoadFiles(paths));
+                    var result = new List<string>();
+                    foreach (var path in paths)
+                    {
+                        var ex = Path.GetExtension(path);
+                        if (ex.ToLower() == ".hpf")
+                        {
+                            await Task.Run(() => loadHPF(path));
+                            break;
+                        }
+                        result.Add(path);
+                    }
+
+                    if (result.Count > 0)
+                    {
+                        paths = result.ToArray();
+                        await Task.Run(() => assetsManager.LoadFiles(paths));
+                    }
                 }
                 BuildAssetStructures();
             }
@@ -201,7 +226,8 @@ namespace AssetStudioGUI
 
         private async void BuildAssetStructures()
         {
-            if (assetsManager.assetsFileList.Count == 0)
+            var len = assetsManager.assetsFileList.Count;
+            if (len== 0)
             {
                 StatusStripUpdate("No Unity file can be loaded.");
                 return;
@@ -210,14 +236,21 @@ namespace AssetStudioGUI
             (var productName, var treeNodeCollection) = await Task.Run(() => BuildAssetData());
             var typeMap = await Task.Run(() => BuildClassStructure());
 
-            if (!string.IsNullOrEmpty(productName))
+            var firstAssetsFile = assetsManager.assetsFileList[0];
+            if (string.IsNullOrEmpty(productName))
             {
-                Text = $"AssetStudioGUI v{Application.ProductVersion} - {productName} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
+                if (len == 1)
+                {
+                    var name = Path.GetFileNameWithoutExtension(firstAssetsFile.originalPath);
+                    productName = $"{name}({firstAssetsFile.fileName})";
+                }
+                else
+                {
+                    productName = "no name";
+                }
             }
-            else
-            {
-                Text = $"AssetStudioGUI v{Application.ProductVersion} - no productName - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
-            }
+
+            Text = $"AssetStudioGUI v{Application.ProductVersion} - {productName} - {firstAssetsFile.unityVersion} - {firstAssetsFile.m_TargetPlatform}";
 
             assetListView.VirtualListSize = visibleAssets.Count;
 
@@ -2081,24 +2114,29 @@ namespace AssetStudioGUI
             {
                 ResetForm();
                 var file = openFileDialog.FileName;
-                var folder = Path.GetDirectoryName(file);
-                var savePrefix = Path.Combine(folder, "exports");
+                await Task.Run(() => loadHPF(file));
 
-
-                var item = file.Replace("\\", "/");
-                var name = Path.GetFileNameWithoutExtension(item);
-                var savePath = Path.Combine(savePrefix, name).Replace("\\", "/");
-
-                if (Directory.Exists(savePath))
-                {
-                    Directory.Delete(savePath, true);
-                }
-
-
-                await Task.Run(() => HPFHelper.RunFile(openFileDialog.FileName));
-                await Task.Run(() => assetsManager.LoadFolder(savePath));
                 BuildAssetStructures();
             }
+        }
+
+        private void loadHPF(string file)
+        {
+            var folder = Path.GetDirectoryName(file);
+            var savePrefix = Path.Combine(folder, "exports");
+
+
+            var item = file.Replace("\\", "/");
+            var name = Path.GetFileNameWithoutExtension(item);
+            var savePath = Path.Combine(savePrefix, name).Replace("\\", "/");
+
+            if (Directory.Exists(savePath))
+            {
+                Directory.Delete(savePath, true);
+            }
+
+            HPFHelper.RunFile(file);
+            assetsManager.LoadFolder(savePath);
         }
 
         private async void decodeLuaToolStripMenuItem_Click(object sender, EventArgs e)
