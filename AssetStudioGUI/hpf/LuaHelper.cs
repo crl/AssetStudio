@@ -17,7 +17,7 @@ namespace AssetStudio.hpf
             {
                 return;
             }
-
+            luas.Clear();
             foreach (var file in files)
             {
                 luas.Add(file);
@@ -42,18 +42,23 @@ namespace AssetStudio.hpf
             Single(file);
         }
 
-        private static void Single(string file)
+        public static void Single(string file)
         {
             var app = AppDomain.CurrentDomain.BaseDirectory;
 
             var prefix = Path.GetDirectoryName(file);
 
+            var toPrefix= Path.Combine(prefix, "decode");
+            if (Directory.Exists(toPrefix) == false)
+            {
+                Directory.CreateDirectory(toPrefix);
+            }
             var fileName=Path.GetFileNameWithoutExtension(file);
-            var to=Path.Combine(prefix, fileName);
+            var to=Path.Combine(toPrefix, fileName);
 
             var luadec = "luadec.exe";
             var exe = Path.Combine(app, $"libs/5.3/bin/{luadec}");
-            var c = string.Format("/c {0} {1} > {2}_d.lua", luadec, file, to);
+            var c = string.Format("/c {0} {1} > {2}.lua", luadec, file, to);
 
             var root = Path.GetDirectoryName(exe);
             System.Diagnostics.ProcessStartInfo p = new System.Diagnostics.ProcessStartInfo("cmd.exe", c);

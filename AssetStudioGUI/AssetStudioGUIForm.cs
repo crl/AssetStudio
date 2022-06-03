@@ -145,10 +145,14 @@ namespace AssetStudioGUI
                     var result = new List<string>();
                     foreach (var path in paths)
                     {
-                        var ex = Path.GetExtension(path);
-                        if (ex.ToLower() == ".hpf")
+                        var ex = Path.GetExtension(path).ToLower();
+                        if (ex == ".hpf")
                         {
                             await Task.Run(() => loadHPF(path));
+                            break;
+                        }else if (ex == ".lua")
+                        {
+                            await Task.Run(() => loadLua(path));
                             break;
                         }
                         result.Add(path);
@@ -2137,6 +2141,11 @@ namespace AssetStudioGUI
 
             HPFHelper.RunFile(file);
             assetsManager.LoadFolder(savePath);
+        }
+
+        private void loadLua(string file)
+        {
+            LuaHelper.Single(file);
         }
 
         private async void decodeLuaToolStripMenuItem_Click(object sender, EventArgs e)
