@@ -114,19 +114,18 @@ namespace AssetStudio
                             var sharedFilePath = Path.Combine(Path.GetDirectoryName(reader.FullPath), sharedFileName);
                             if (!noexistFiles.Contains(sharedFilePath))
                             {
-                            if (!File.Exists(sharedFilePath))
-                            {
-                                var findFiles = Directory.GetFiles(Path.GetDirectoryName(reader.FullPath), sharedFileName, SearchOption.AllDirectories);
-                                if (findFiles.Length > 0)
+                                if (!File.Exists(sharedFilePath))
                                 {
-                                    sharedFilePath = findFiles[0];
+                                    var findFiles = Directory.GetFiles(Path.GetDirectoryName(reader.FullPath), sharedFileName, SearchOption.AllDirectories);
+                                    if (findFiles.Length > 0)
+                                    {
+                                        sharedFilePath = findFiles[0];
+                                    }
                                 }
-                            }
-
-                            if (File.Exists(sharedFilePath))
-                            {
-                                importFiles.Add(sharedFilePath);
-                                importFilesHash.Add(sharedFileName);
+                                if (File.Exists(sharedFilePath))
+                                {
+                                    importFiles.Add(sharedFilePath);
+                                    importFilesHash.Add(sharedFileName);
                                 }
                                 else
                                 {
@@ -157,7 +156,7 @@ namespace AssetStudio
                 {
                     var assetsFile = new SerializedFile(reader, this);
                     assetsFile.originalPath = originalPath;
-                    if (!string.IsNullOrEmpty(unityVersion) && assetsFile.header.m_Version < SerializedFileFormatVersion.kUnknown_7)
+                    if (!string.IsNullOrEmpty(unityVersion) && assetsFile.header.m_Version < SerializedFileFormatVersion.Unknown_7)
                     {
                         assetsFile.SetVersion(unityVersion);
                     }

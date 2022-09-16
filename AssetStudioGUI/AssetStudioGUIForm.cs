@@ -161,8 +161,8 @@ namespace AssetStudioGUI
                     if (result.Count > 0)
                     {
                         paths = result.ToArray();
-                        await Task.Run(() => assetsManager.LoadFiles(paths));
-                    }
+                    await Task.Run(() => assetsManager.LoadFiles(paths));
+                }
                 }
                 BuildAssetStructures();
             }
@@ -247,11 +247,11 @@ namespace AssetStudioGUI
                 {
                     var name = Path.GetFileNameWithoutExtension(firstAssetsFile.originalPath);
                     productName = $"{name}({firstAssetsFile.fileName})";
-                }
-                else
-                {
+            }
+            else
+            {
                     productName = "no name";
-                }
+            }
             }
 
             Text = $"AssetStudioGUI v{Application.ProductVersion} - {productName} - {firstAssetsFile.unityVersion} - {firstAssetsFile.m_TargetPlatform}";
@@ -854,40 +854,40 @@ namespace AssetStudioGUI
             {
                 switch (m_AudioClip.m_Type)
                 {
-                    case AudioType.ACC:
+                    case FMODSoundType.ACC:
                         assetItem.InfoText += "Acc";
                         break;
-                    case AudioType.AIFF:
+                    case FMODSoundType.AIFF:
                         assetItem.InfoText += "AIFF";
                         break;
-                    case AudioType.IT:
+                    case FMODSoundType.IT:
                         assetItem.InfoText += "Impulse tracker";
                         break;
-                    case AudioType.MOD:
+                    case FMODSoundType.MOD:
                         assetItem.InfoText += "Protracker / Fasttracker MOD";
                         break;
-                    case AudioType.MPEG:
+                    case FMODSoundType.MPEG:
                         assetItem.InfoText += "MP2/MP3 MPEG";
                         break;
-                    case AudioType.OGGVORBIS:
+                    case FMODSoundType.OGGVORBIS:
                         assetItem.InfoText += "Ogg vorbis";
                         break;
-                    case AudioType.S3M:
+                    case FMODSoundType.S3M:
                         assetItem.InfoText += "ScreamTracker 3";
                         break;
-                    case AudioType.WAV:
+                    case FMODSoundType.WAV:
                         assetItem.InfoText += "Microsoft WAV";
                         break;
-                    case AudioType.XM:
+                    case FMODSoundType.XM:
                         assetItem.InfoText += "FastTracker 2 XM";
                         break;
-                    case AudioType.XMA:
+                    case FMODSoundType.XMA:
                         assetItem.InfoText += "Xbox360 XMA";
                         break;
-                    case AudioType.VAG:
+                    case FMODSoundType.VAG:
                         assetItem.InfoText += "PlayStation Portable ADPCM";
                         break;
-                    case AudioType.AUDIOQUEUE:
+                    case FMODSoundType.AUDIOQUEUE:
                         assetItem.InfoText += "iPhone";
                         break;
                     default:
@@ -911,7 +911,7 @@ namespace AssetStudioGUI
                     case AudioCompressionFormat.MP3:
                         assetItem.InfoText += "MP3";
                         break;
-                    case AudioCompressionFormat.VAG:
+                    case AudioCompressionFormat.PSMVAG:
                         assetItem.InfoText += "PlayStation Portable ADPCM";
                         break;
                     case AudioCompressionFormat.HEVAG:
@@ -1260,10 +1260,7 @@ namespace AssetStudioGUI
             assemblyLoader.Clear();
             exportableAssets.Clear();
             visibleAssets.Clear();
-            if (sceneTreeView != null)
-            {
-                sceneTreeView.Nodes.Clear();
-            }
+            sceneTreeView.Nodes.Clear();
             assetListView.VirtualListSize = 0;
             assetListView.Items.Clear();
             classesListView.Items.Clear();
