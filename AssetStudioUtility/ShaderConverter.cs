@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Unity.SerializationLogic;
 
 namespace AssetStudio
 {
@@ -62,7 +63,7 @@ namespace AssetStudio
         private static string ConvertSerializedShader(SerializedShader m_ParsedForm, ShaderCompilerPlatform[] platforms, ShaderProgram[] shaderPrograms)
         {
             var sb = new StringBuilder();
-            sb.Append($"Shader \"{m_ParsedForm.m_Name}\" {{\n");
+            sb.Append($"Shader \"{m_ParsedForm.m_Name}\" \n{{\n");
 
             sb.Append(ConvertSerializedProperties(m_ParsedForm.m_PropInfo));
 
@@ -87,51 +88,55 @@ namespace AssetStudio
 
         private static string ConvertSerializedSubShader(SerializedSubShader m_SubShader, ShaderCompilerPlatform[] platforms, ShaderProgram[] shaderPrograms)
         {
-            var sb = new StringBuilder();
-            sb.Append("SubShader {\n");
+            var sb = new IntendStringBuilder();
+            sb.Intend = 1;
+            sb.IntendAppendLine("SubShader");
+            sb.IntendAppendLine("{");
             if (m_SubShader.m_LOD != 0)
             {
-                sb.Append($" LOD {m_SubShader.m_LOD}\n");
+                sb.IntendAppendLine($"LOD {m_SubShader.m_LOD}",1);
             }
 
-            sb.Append(ConvertSerializedTagMap(m_SubShader.m_Tags, 1));
+            sb.Append(ConvertSerializedTagMap(m_SubShader.m_Tags, 2));
 
             foreach (var m_Passe in m_SubShader.m_Passes)
             {
                 sb.Append(ConvertSerializedPass(m_Passe, platforms, shaderPrograms));
             }
-            sb.Append("}\n");
+            sb.IntendAppendLine("}");
             return sb.ToString();
         }
 
         private static string ConvertSerializedPass(SerializedPass m_Passe, ShaderCompilerPlatform[] platforms, ShaderProgram[] shaderPrograms)
         {
-            var sb = new StringBuilder();
+            var sb = new IntendStringBuilder();
+            sb.Intend = 2;
             switch (m_Passe.m_Type)
             {
                 case PassType.Normal:
-                    sb.Append(" Pass ");
+                    sb.IntendAppend("Pass");
                     break;
                 case PassType.Use:
-                    sb.Append(" UsePass ");
+                    sb.IntendAppend("UsePass");
                     break;
                 case PassType.Grab:
-                    sb.Append(" GrabPass ");
+                    sb.IntendAppend("GrabPass");
                     break;
             }
             if (m_Passe.m_Type == PassType.Use)
             {
-                sb.Append($"\"{m_Passe.m_UseName}\"\n");
+                sb.AppendLine($"\"{m_Passe.m_UseName}\"");
             }
             else
             {
-                sb.Append("{\n");
+                sb.AppendLine("");
+                sb.IntendAppendLine("{");
 
                 if (m_Passe.m_Type == PassType.Grab)
                 {
                     if (!string.IsNullOrEmpty(m_Passe.m_TextureName))
                     {
-                        sb.Append($"  \"{m_Passe.m_TextureName}\"\n");
+                        sb.IntendAppendLine($"\"{m_Passe.m_TextureName}\"", 1);
                     }
                 }
                 else
@@ -140,54 +145,61 @@ namespace AssetStudio
 
                     if (m_Passe.progVertex.m_SubPrograms.Length > 0)
                     {
-                        sb.Append("Program \"vp\" {\n");
+                        sb.IntendAppendLine("Program \"vp\"",1);
+                        sb.IntendAppendLine("{", 1);
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progVertex.m_SubPrograms, platforms, shaderPrograms));
-                        sb.Append("}\n");
+                        sb.IntendAppendLine("}",1);
                     }
 
                     if (m_Passe.progFragment.m_SubPrograms.Length > 0)
                     {
-                        sb.Append("Program \"fp\" {\n");
+                        sb.IntendAppendLine("Program \"fp\"", 1);
+                        sb.IntendAppendLine("{", 1);
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progFragment.m_SubPrograms, platforms, shaderPrograms));
-                        sb.Append("}\n");
+                        sb.IntendAppendLine("}",1);
                     }
 
                     if (m_Passe.progGeometry.m_SubPrograms.Length > 0)
                     {
-                        sb.Append("Program \"gp\" {\n");
+                        sb.IntendAppendLine("Program \"gp\"",1);
+                        sb.IntendAppendLine("{", 1);
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progGeometry.m_SubPrograms, platforms, shaderPrograms));
-                        sb.Append("}\n");
+                        sb.IntendAppendLine("}", 1);
                     }
 
                     if (m_Passe.progHull.m_SubPrograms.Length > 0)
                     {
-                        sb.Append("Program \"hp\" {\n");
+                        sb.IntendAppendLine("Program \"hp\"",1);
+                        sb.IntendAppendLine("{", 1);
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progHull.m_SubPrograms, platforms, shaderPrograms));
-                        sb.Append("}\n");
+                        sb.IntendAppendLine("}", 1);
                     }
 
                     if (m_Passe.progDomain.m_SubPrograms.Length > 0)
                     {
-                        sb.Append("Program \"dp\" {\n");
+                        sb.IntendAppendLine("Program \"dp\"",1);
+                        sb.IntendAppendLine("{", 1);
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progDomain.m_SubPrograms, platforms, shaderPrograms));
-                        sb.Append("}\n");
+                        sb.IntendAppendLine("}", 1);
                     }
 
                     if (m_Passe.progRayTracing?.m_SubPrograms.Length > 0)
                     {
-                        sb.Append("Program \"rtp\" {\n");
+                        sb.IntendAppendLine("Program \"rtp\"",1);
+                        sb.IntendAppendLine("{", 1);
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progRayTracing.m_SubPrograms, platforms, shaderPrograms));
-                        sb.Append("}\n");
+                        sb.IntendAppendLine("}",1);
                     }
                 }
-                sb.Append("}\n");
+                sb.IntendAppendLine("}");
             }
             return sb.ToString();
         }
 
         private static string ConvertSerializedSubPrograms(SerializedSubProgram[] m_SubPrograms, ShaderCompilerPlatform[] platforms, ShaderProgram[] shaderPrograms)
         {
-            var sb = new StringBuilder();
+            var sb = new IntendStringBuilder();
+            sb.Intend = 4;
             var groups = m_SubPrograms.GroupBy(x => x.m_BlobIndex);
             foreach (var group in groups)
             {
@@ -203,52 +215,58 @@ namespace AssetStudio
                             var isTier = subPrograms.Count > 1;
                             foreach (var subProgram in subPrograms)
                             {
-                                sb.Append($"SubProgram \"{GetPlatformString(platform)} ");
+                                sb.IntendAppend($"SubProgram \"{GetPlatformString(platform)} ");
                                 if (isTier)
                                 {
                                     sb.Append($"hw_tier{subProgram.m_ShaderHardwareTier:00} ");
                                 }
-                                sb.Append("\" {\n");
+                                sb.AppendLine("\"");
+                                sb.IntendAppendLine("{");
                                 sb.Append(shaderPrograms[i].m_SubPrograms[subProgram.m_BlobIndex].Export());
-                                sb.Append("\n}\n");
+                                sb.AppendLine("");
+                                sb.IntendAppendLine("}");
+                                break;
                             }
                             break;
                         }
                     }
+                    break;
                 }
+                break;
             }
             return sb.ToString();
         }
 
         private static string ConvertSerializedShaderState(SerializedShaderState m_State)
         {
-            var sb = new StringBuilder();
+            var sb = new IntendStringBuilder();
+            sb.Intend = 3;
             if (!string.IsNullOrEmpty(m_State.m_Name))
             {
-                sb.Append($"  Name \"{m_State.m_Name}\"\n");
+                sb.IntendAppendLine($"Name \"{m_State.m_Name}\"");
             }
             if (m_State.m_LOD != 0)
             {
-                sb.Append($"  LOD {m_State.m_LOD}\n");
+                sb.IntendAppendLine($"LOD {m_State.m_LOD}");
             }
 
-            sb.Append(ConvertSerializedTagMap(m_State.m_Tags, 2));
+            sb.Append(ConvertSerializedTagMap(m_State.m_Tags, 3));
 
             sb.Append(ConvertSerializedShaderRTBlendState(m_State.rtBlend, m_State.rtSeparateBlend));
 
             if (m_State.alphaToMask.val > 0f)
             {
-                sb.Append("  AlphaToMask On\n");
+                sb.IntendAppendLine("AlphaToMask On");
             }
 
             if (m_State.zClip?.val != 1f) //ZClip On
             {
-                sb.Append("  ZClip Off\n");
+                sb.IntendAppendLine("ZClip Off");
             }
 
             if (m_State.zTest.val != 4f) //ZTest LEqual
             {
-                sb.Append("  ZTest ");
+                sb.IntendAppend("ZTest ");
                 switch (m_State.zTest.val) //enum CompareFunction
                 {
                     case 0f: //kFuncDisabled
@@ -277,17 +295,17 @@ namespace AssetStudio
                         break;
                 }
 
-                sb.Append("\n");
+                sb.AppendLine("");
             }
 
             if (m_State.zWrite.val != 1f) //ZWrite On
             {
-                sb.Append("  ZWrite Off\n");
+                sb.IntendAppendLine("ZWrite Off");
             }
 
             if (m_State.culling.val != 2f) //Cull Back
             {
-                sb.Append("  Cull ");
+                sb.IntendAppend("Cull ");
                 switch (m_State.culling.val) //enum CullMode
                 {
                     case 0f: //kCullOff
@@ -297,12 +315,12 @@ namespace AssetStudio
                         sb.Append("Front");
                         break;
                 }
-                sb.Append("\n");
+                sb.AppendLine("");
             }
 
             if (m_State.offsetFactor.val != 0f || m_State.offsetUnits.val != 0f)
             {
-                sb.Append($"  Offset {m_State.offsetFactor.val}, {m_State.offsetUnits.val}\n");
+                sb.IntendAppendLine($"Offset {m_State.offsetFactor.val}, {m_State.offsetUnits.val}");
             }
 
             if (m_State.stencilRef.val != 0f ||
@@ -321,18 +339,18 @@ namespace AssetStudio
                 m_State.stencilOpBack.zFail.val != 0f ||
                 m_State.stencilOpBack.comp.val != 8f)
             {
-                sb.Append("  Stencil {\n");
+                sb.IntendAppendLine("Stencil {");
                 if (m_State.stencilRef.val != 0f)
                 {
-                    sb.Append($"   Ref {m_State.stencilRef.val}\n");
+                    sb.IntendAppendLine($"Ref {m_State.stencilRef.val}",1);
                 }
                 if (m_State.stencilReadMask.val != 255f)
                 {
-                    sb.Append($"   ReadMask {m_State.stencilReadMask.val}\n");
+                    sb.IntendAppendLine($"ReadMask {m_State.stencilReadMask.val}",1);
                 }
                 if (m_State.stencilWriteMask.val != 255f)
                 {
-                    sb.Append($"   WriteMask {m_State.stencilWriteMask.val}\n");
+                    sb.IntendAppendLine($"WriteMask {m_State.stencilWriteMask.val}",1);
                 }
                 if (m_State.stencilOp.pass.val != 0f ||
                     m_State.stencilOp.fail.val != 0f ||
@@ -355,7 +373,7 @@ namespace AssetStudio
                 {
                     sb.Append(ConvertSerializedStencilOp(m_State.stencilOpBack, "Back"));
                 }
-                sb.Append("  }\n");
+                sb.IntendAppendLine("}");
             }
 
             if (m_State.fogMode != FogMode.Unknown ||
@@ -367,10 +385,10 @@ namespace AssetStudio
                 m_State.fogStart.val != 0f ||
                 m_State.fogEnd.val != 0f)
             {
-                sb.Append("  Fog {\n");
+                sb.IntendAppendLine("Fog {");
                 if (m_State.fogMode != FogMode.Unknown)
                 {
-                    sb.Append("   Mode ");
+                    sb.IntendAppend("Mode ",1);
                     switch (m_State.fogMode)
                     {
                         case FogMode.Disabled:
@@ -386,48 +404,49 @@ namespace AssetStudio
                             sb.Append("Exp2");
                             break;
                     }
-                    sb.Append("\n");
+                    sb.AppendLine("\n");
                 }
                 if (m_State.fogColor.x.val != 0f ||
                     m_State.fogColor.y.val != 0f ||
                     m_State.fogColor.z.val != 0f ||
                     m_State.fogColor.w.val != 0f)
                 {
-                    sb.AppendFormat("   Color ({0},{1},{2},{3})\n",
+                    sb.IntendAppendLine(string.Format("Color ({0},{1},{2},{3})",
                         m_State.fogColor.x.val.ToString(CultureInfo.InvariantCulture),
                         m_State.fogColor.y.val.ToString(CultureInfo.InvariantCulture),
                         m_State.fogColor.z.val.ToString(CultureInfo.InvariantCulture),
-                        m_State.fogColor.w.val.ToString(CultureInfo.InvariantCulture));
+                        m_State.fogColor.w.val.ToString(CultureInfo.InvariantCulture)));
                 }
                 if (m_State.fogDensity.val != 0f)
                 {
-                    sb.Append($"   Density {m_State.fogDensity.val.ToString(CultureInfo.InvariantCulture)}\n");
+                    sb.IntendAppendLine($"Density {m_State.fogDensity.val.ToString(CultureInfo.InvariantCulture)}");
                 }
                 if (m_State.fogStart.val != 0f ||
                     m_State.fogEnd.val != 0f)
                 {
-                    sb.Append($"   Range {m_State.fogStart.val.ToString(CultureInfo.InvariantCulture)}, {m_State.fogEnd.val.ToString(CultureInfo.InvariantCulture)}\n");
+                    sb.IntendAppendLine($"Range {m_State.fogStart.val.ToString(CultureInfo.InvariantCulture)}, {m_State.fogEnd.val.ToString(CultureInfo.InvariantCulture)}");
                 }
-                sb.Append("  }\n");
+                sb.IntendAppendLine("}");
             }
 
             if (m_State.lighting)
             {
-                sb.Append($"  Lighting {(m_State.lighting ? "On" : "Off")}\n");
+                sb.IntendAppendLine($"Lighting {(m_State.lighting ? "On" : "Off")}");
             }
 
-            sb.Append($"  GpuProgramID {m_State.gpuProgramID}\n");
+            sb.IntendAppendLine($"GpuProgramID {m_State.gpuProgramID}");
 
             return sb.ToString();
         }
 
         private static string ConvertSerializedStencilOp(SerializedStencilOp stencilOp, string suffix)
         {
-            var sb = new StringBuilder();
-            sb.Append($"   Comp{suffix} {ConvertStencilComp(stencilOp.comp)}\n");
-            sb.Append($"   Pass{suffix} {ConvertStencilOp(stencilOp.pass)}\n");
-            sb.Append($"   Fail{suffix} {ConvertStencilOp(stencilOp.fail)}\n");
-            sb.Append($"   ZFail{suffix} {ConvertStencilOp(stencilOp.zFail)}\n");
+            var sb = new IntendStringBuilder();
+            sb.Intend = 4;
+            sb.IntendAppendLine($"Comp{suffix} {ConvertStencilComp(stencilOp.comp)}");
+            sb.IntendAppendLine($"Pass{suffix} {ConvertStencilOp(stencilOp.pass)}");
+            sb.IntendAppendLine($"Fail{suffix} {ConvertStencilOp(stencilOp.fail)}");
+            sb.IntendAppendLine($"ZFail{suffix} {ConvertStencilOp(stencilOp.zFail)}");
             return sb.ToString();
         }
 
@@ -483,7 +502,8 @@ namespace AssetStudio
 
         private static string ConvertSerializedShaderRTBlendState(SerializedShaderRTBlendState[] rtBlend, bool rtSeparateBlend)
         {
-            var sb = new StringBuilder();
+            var sb = new IntendStringBuilder();
+            sb.Intend = 3;
             for (var i = 0; i < rtBlend.Length; i++)
             {
                 var blend = rtBlend[i];
@@ -492,7 +512,7 @@ namespace AssetStudio
                     blend.srcBlendAlpha.val != 1f ||
                     blend.destBlendAlpha.val != 0f)
                 {
-                    sb.Append("  Blend ");
+                    sb.IntendAppend("Blend ");
                     if (i != 0 || rtSeparateBlend)
                     {
                         sb.Append($"{i} ");
@@ -509,7 +529,7 @@ namespace AssetStudio
                 if (blend.blendOp.val != 0f ||
                     blend.blendOpAlpha.val != 0f)
                 {
-                    sb.Append("  BlendOp ");
+                    sb.IntendAppend("BlendOp ");
                     if (i != 0 || rtSeparateBlend)
                     {
                         sb.Append($"{i} ");
@@ -525,7 +545,7 @@ namespace AssetStudio
                 var val = (int)blend.colMask.val;
                 if (val != 0xf)
                 {
-                    sb.Append("  ColorMask ");
+                    sb.IntendAppend("ColorMask ");
                     if (val == 0)
                     {
                         sb.Append(0);
@@ -637,35 +657,40 @@ namespace AssetStudio
 
         private static string ConvertSerializedTagMap(SerializedTagMap m_Tags, int intent)
         {
-            var sb = new StringBuilder();
+            var sb = new IntendStringBuilder();
+            sb.Intend = intent;
             if (m_Tags.tags.Length > 0)
             {
-                sb.Append(new string(' ', intent));
-                sb.Append("Tags { ");
+                sb.IntendAppend("Tags { ");
                 foreach (var pair in m_Tags.tags)
                 {
                     sb.Append($"\"{pair.Key}\" = \"{pair.Value}\" ");
                 }
-                sb.Append("}\n");
+                sb.AppendLine("}");
             }
             return sb.ToString();
         }
 
         private static string ConvertSerializedProperties(SerializedProperties m_PropInfo)
         {
-            var sb = new StringBuilder();
-            sb.Append("Properties {\n");
+            var sb = new IntendStringBuilder();
+            sb.Intend = 1;
+            sb.IntendAppendLine("Properties");
+            sb.IntendAppendLine("{");
             foreach (var m_Prop in m_PropInfo.m_Props)
             {
                 sb.Append(ConvertSerializedProperty(m_Prop));
             }
-            sb.Append("}\n");
+            sb.IntendAppendLine("}");
             return sb.ToString();
         }
 
         private static string ConvertSerializedProperty(SerializedProperty m_Prop)
         {
-            var sb = new StringBuilder();
+            var sb = new IntendStringBuilder();
+            sb.Intend = 2;
+
+            sb.IntendAppend("");
             foreach (var m_Attribute in m_Prop.m_Attributes)
             {
                 sb.Append($"[{m_Attribute}] ");
@@ -727,7 +752,7 @@ namespace AssetStudio
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            sb.Append("\n");
+            sb.AppendLine("");
             return sb.ToString();
         }
 
@@ -992,7 +1017,7 @@ namespace AssetStudio
                 sb.Append("}\n");
             }
 
-            sb.Append("\"");
+            sb.Append("");
             if (m_ProgramCode.Length > 0)
             {
                 switch (m_ProgramType)
@@ -1005,7 +1030,11 @@ namespace AssetStudio
                     case ShaderGpuProgramType.GLCore32:
                     case ShaderGpuProgramType.GLCore41:
                     case ShaderGpuProgramType.GLCore43:
-                        sb.Append(Encoding.UTF8.GetString(m_ProgramCode));
+                        var line = Encoding.UTF8.GetString(m_ProgramCode);
+                        line=line.Replace("hlslcc_mtx4x4unity_", "_");
+                        line = line.Replace("u_xlat", "u_");
+                        
+                        sb.Append(line);
                         break;
                     case ShaderGpuProgramType.DX9VertexSM20:
                     case ShaderGpuProgramType.DX9VertexSM30:
@@ -1077,7 +1106,7 @@ namespace AssetStudio
                         break;
                 }
             }
-            sb.Append('"');
+            sb.Append("");
             return sb.ToString();
         }
     }
