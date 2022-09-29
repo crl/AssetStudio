@@ -275,6 +275,17 @@ namespace AssetStudio
                             throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
                         }
                         blocksInfoUncompresseddStream = new MemoryStream(uncompressedBytes);
+
+                        //解压数据保存 用于对比
+                        /*var fileReader = reader as FileReader;
+                        if (fileReader != null)
+                        {
+                            var path=fileReader.FullPath + ".uncompressed";
+                            var fileStream = new FileStream(path, FileMode.CreateNew);
+                            blocksInfoUncompresseddStream.WriteTo(fileStream);
+                            blocksInfoUncompresseddStream.Position = 0;
+                        }*/
+
                         break;
                     }
                 default:

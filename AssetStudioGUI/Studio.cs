@@ -478,7 +478,6 @@ namespace AssetStudioGUI
                         var doc = new XDocument(
                             new XElement("Assets",
                                 new XAttribute("filename", filename),
-                                new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
                                 toExportAssets.Select(
                                     asset => new XElement("Asset",
                                         new XElement("Name", asset.Text),
@@ -486,7 +485,8 @@ namespace AssetStudioGUI
                                         new XElement("Type", new XAttribute("id", (int)asset.Type), asset.TypeString),
                                         new XElement("PathID", asset.m_PathID),
                                         new XElement("Source", asset.SourceFile.fullName),
-                                        new XElement("Size", asset.FullSize)
+                                        new XElement("Size", asset.FullSize),
+                                        new XElement("ByteStart", asset.Asset.reader.byteStart)
                                     )
                                 )
                             )
