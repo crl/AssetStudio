@@ -45,7 +45,16 @@ namespace AssetStudio
                     var compressedLength = shader.compressedLengths[i][j];
                     var decompressedLength = shader.decompressedLengths[i][j];
                     var decompressedBytes = new byte[decompressedLength];
-                    LZ4Codec.Decode(shader.compressedBlob, (int)offset, (int)compressedLength, decompressedBytes, 0, (int)decompressedLength);
+                    if (GameManager.Game.Name == "GI")
+                    {
+                        Buffer.BlockCopy(shader.compressedBlob, (int)offset, decompressedBytes, 0, (int)decompressedLength);
+                    }
+                    else
+                    {
+                        LZ4Codec.Decode(shader.compressedBlob, (int)offset, (int)compressedLength, decompressedBytes, 0,
+                            (int)decompressedLength);
+                    }
+
                     using (var blobReader = new BinaryReader(new MemoryStream(decompressedBytes)))
                     {
                         if (j == 0)
@@ -232,7 +241,7 @@ namespace AssetStudio
                     }
                     break;
                 }
-                break;
+                //break;
             }
             return sb.ToString();
         }

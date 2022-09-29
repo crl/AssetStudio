@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace AssetStudio
+﻿namespace AssetStudio
 {
     public enum FileType
     {
@@ -14,6 +8,7 @@ namespace AssetStudio
         ResourceFile,
         GZipFile,
         BrotliFile,
-        ZipFile
+        ZipFile,
+        BLKFile
     }
 }

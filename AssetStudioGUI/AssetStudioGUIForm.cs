@@ -772,6 +772,18 @@ namespace AssetStudioGUI
                     case AnimationClip _:
                         StatusStripUpdate("Can be exported with Animator or Objects");
                         break;
+                    case AssetBundle m_AssetBundle:
+                        PreviewAssetBundle(m_AssetBundle);
+                        StatusStripUpdate("Can be exported to JSON file.");
+                        break;
+                    case IndexObject m_IndexObject:
+                        PreviewIndexObject(m_IndexObject);
+                        StatusStripUpdate("Can be exported to JSON file.");
+                        break;
+                    case MiHoYoBinData m_MiHoYoBinData:
+                        PreviewMiHoYoBinData(m_MiHoYoBinData);
+                        StatusStripUpdate("Can be exported/previewed as JSON if data is a valid JSON (check XOR).");
+                        break;
                     default:
                         var str = assetItem.Asset.Dump();
                         if (str != null)
@@ -983,6 +995,22 @@ namespace AssetStudioGUI
             var text = Encoding.UTF8.GetString(m_TextAsset.m_Script);
             text = text.Replace("\n", "\r\n").Replace("\0", "");
             PreviewText(text);
+        }
+
+        private void PreviewAssetBundle(AssetBundle m_AssetBundle)
+        {
+            //var str = JsonConvert.SerializeObject(m_AssetBundle, Formatting.Indented);
+            //PreviewText(str);
+        }
+        private void PreviewIndexObject(IndexObject m_IndexObject)
+        {
+            var str = JsonConvert.SerializeObject(m_IndexObject, Formatting.Indented);
+            PreviewText(str);
+        }
+
+        private void PreviewMiHoYoBinData(MiHoYoBinData m_MiHoYoBinData)
+        {
+            PreviewText(m_MiHoYoBinData.Str);
         }
 
         private void PreviewMonoBehaviour(MonoBehaviour m_MonoBehaviour)

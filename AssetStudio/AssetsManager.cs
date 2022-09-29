@@ -90,6 +90,33 @@ namespace AssetStudio
                 case FileType.ZipFile:
                     LoadZipFile(reader);
                     break;
+                case FileType.BLKFile:
+                    LoadBLKFile(reader);
+                    break;
+            }
+        }
+
+        private void LoadBLKFile(FileReader reader)
+        {
+            var hoyoFile = new HoYoFile(reader);
+            foreach (var bundle in hoyoFile.Bundles)
+            {
+                foreach (var file in bundle.Value)
+                {
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
+                    var subReader = new FileReader(dummyPath, file.stream);
+                    if (subReader.FileType == FileType.AssetsFile)
+                    {
+                        var assetsFile = new SerializedFile(subReader, this);
+                        CheckStrippedVersion(assetsFile);
+                        assetsFileList.Add(assetsFile);
+                        assetsFileListHash.Add(assetsFile.fileName);
+                    }
+                    else
+                    {
+                        resourceFileReaders[file.fileName] = subReader; //TODO
+                    }
+                }
             }
         }
 

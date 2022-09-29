@@ -36,6 +36,8 @@ namespace AssetStudio
                     return FileType.BundleFile;
                 case "UnityWebData1.0":
                     return FileType.WebFile;
+                case "blk":
+                    return FileType.BLKFile;
                 default:
                     {
                         byte[] magic = ReadBytes(2);

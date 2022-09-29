@@ -1,0 +1,32 @@
+﻿using System.Collections.Generic;
+
+namespace AssetStudio
+{
+    public class TOTFile
+    {
+        public Dictionary<long, StreamFile[]> Bundles = new Dictionary<long, StreamFile[]>();
+        public TOTFile(FileReader reader, long[] BundlePos = null)
+        {
+            if (BundlePos!=null && BundlePos.Length != 0)
+            {
+                foreach (var pos in BundlePos)
+                {
+                    reader.Position = pos;
+                    var bundle = new BundleFile(reader);
+                    //Bundles.Add(pos, bundle.FileList);
+                }
+            }
+            else
+            {
+                while (reader.Position != reader.BaseStream.Length)
+                {
+                    var pos = reader.Position;
+                    var bundle = new BundleFile(reader);
+                   // if (bundle.FileList == null) 
+                      //  continue;
+                    //Bundles.Add(pos, bundle.FileList);
+                }
+            }
+        }
+    }
+}

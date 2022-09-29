@@ -228,12 +228,20 @@ namespace AssetStudio
                 version = versionSplit.Select(int.Parse).ToArray();
             }
         }
+        private static int DecryptClassId(int id) => (id ^ 0x23746FBE) - 3;
 
         private SerializedType ReadSerializedType(bool isRefType)
         {
             var type = new SerializedType();
 
             type.classID = reader.ReadInt32();
+
+            if ((type.classID > 0xFFFF || type.classID <= 0x0) && !Enum.IsDefined(typeof(ClassIDType), type.classID))
+            {
+                byte[] classIdBytes = BitConverter.GetBytes(type.classID);
+                Array.Reverse(classIdBytes);
+                type.classID = DecryptClassId(BitConverter.ToInt32(classIdBytes, 0));
+            }
 
             if (header.m_Version >= SerializedFileFormatVersion.RefactoredClassId)
             {
