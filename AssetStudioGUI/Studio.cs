@@ -147,7 +147,6 @@ namespace AssetStudioGUI
                 foreach (var asset in assetsFile.Objects)
                 {
                     var assetItem = new AssetItem(asset);
-                    assetItem.ab_hash = assetsFile.fileName;
                     objectAssetItemDic.Add(asset, assetItem);
                     assetItem.UniqueID = " #" + i;
                     var exportable = false;
@@ -266,7 +265,7 @@ namespace AssetStudioGUI
             Progress.Reset();
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
-                var fileNode = new GameObjectTreeNode(assetsFile.fileName); //RootNode
+                var fileNode = new TreeNode(assetsFile.fileName); //RootNode
 
                 foreach (var obj in assetsFile.Objects)
                 {
@@ -308,11 +307,12 @@ namespace AssetStudioGUI
                             {
                                 if (m_Father.m_GameObject.TryGet(out var parentGameObject))
                                 {
-                                    if (!treeNodeDictionary.TryGetValue(parentGameObject, out parentNode))
+                                    if (!treeNodeDictionary.TryGetValue(parentGameObject, out var parentGameObjectNode))
                                     {
-                                        parentNode = new GameObjectTreeNode(parentGameObject);
-                                        treeNodeDictionary.Add(parentGameObject, parentNode);
+                                        parentGameObjectNode = new GameObjectTreeNode(parentGameObject);
+                                        treeNodeDictionary.Add(parentGameObject, parentGameObjectNode);
                                     }
+                                    parentNode = parentGameObjectNode;
                                 }
                             }
                         }
@@ -414,7 +414,7 @@ namespace AssetStudioGUI
                             break;
                     }
                     exportPath += Path.DirectorySeparatorChar;
-                    StatusStripUpdate($"Exporting {asset.TypeString}: {asset.Text}");
+                    StatusStripUpdate($"[{exportedCount}/{toExportCount}] Exporting {asset.TypeString}: {asset.Text}");
                     try
                     {
                         switch (exportType)
@@ -458,7 +458,7 @@ namespace AssetStudioGUI
 
                 if (Properties.Settings.Default.openAfterExport && exportedCount > 0)
                 {
-                    Process.Start(savePath);
+                    OpenFolderInExplorer(savePath);
                 }
             });
         }
@@ -478,7 +478,6 @@ namespace AssetStudioGUI
                         var doc = new XDocument(
                             new XElement("Assets",
                                 new XAttribute("filename", filename),
-                                new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
                                 toExportAssets.Select(
                                     asset => new XElement("Asset",
                                         new XElement("Name", asset.Text),
@@ -486,7 +485,8 @@ namespace AssetStudioGUI
                                         new XElement("Type", new XAttribute("id", (int)asset.Type), asset.TypeString),
                                         new XElement("PathID", asset.m_PathID),
                                         new XElement("Source", asset.SourceFile.fullName),
-                                        new XElement("Size", asset.FullSize)
+                                        new XElement("Size", asset.FullSize),
+                                        new XElement("ByteStart", asset.Asset.reader.byteStart)
                                     )
                                 )
                             )
@@ -503,7 +503,7 @@ namespace AssetStudioGUI
 
                 if (Properties.Settings.Default.openAfterExport && toExportAssets.Count() > 0)
                 {
-                    Process.Start(savePath);
+                    OpenFolderInExplorer(savePath);
                 }
             });
         }
@@ -515,7 +515,7 @@ namespace AssetStudioGUI
                 var count = nodes.Cast<TreeNode>().Sum(x => x.Nodes.Count);
                 int k = 0;
                 Progress.Reset();
-                foreach (GameObjectTreeNode node in nodes)
+                foreach (TreeNode node in nodes)
                 {
                     //遍历一级子节点
                     foreach (GameObjectTreeNode j in node.Nodes)
@@ -532,13 +532,13 @@ namespace AssetStudioGUI
                         //处理非法文件名
                         var filename = FixFileName(j.Text);
                         //每个文件存放在单独的文件夹
-                        var targetPath = $"{savePath}{filename}\\";
+                        var targetPath = $"{savePath}{filename}{Path.DirectorySeparatorChar}";
                         //重名文件处理
                         for (int i = 1; ; i++)
                         {
                             if (Directory.Exists(targetPath))
                             {
-                                targetPath = $"{savePath}{filename} ({i})\\";
+                                targetPath = $"{savePath}{filename} ({i}){Path.DirectorySeparatorChar}";
                             }
                             else
                             {
@@ -563,7 +563,7 @@ namespace AssetStudioGUI
                 }
                 if (Properties.Settings.Default.openAfterExport)
                 {
-                    Process.Start(savePath);
+                    OpenFolderInExplorer(savePath);
                 }
                 StatusStripUpdate("Finished");
             });
@@ -589,7 +589,7 @@ namespace AssetStudioGUI
                     ExportAnimator(animator, exportPath, animationList);
                     if (Properties.Settings.Default.openAfterExport)
                     {
-                        Process.Start(exportPath);
+                        OpenFolderInExplorer(exportPath);
                     }
                     Progress.Report(1, 1);
                     StatusStripUpdate($"Finished exporting {animator.Text}");
@@ -631,12 +631,12 @@ namespace AssetStudioGUI
                     }
                     if (Properties.Settings.Default.openAfterExport)
                     {
-                        Process.Start(exportPath);
+                        OpenFolderInExplorer(exportPath);
                     }
                 }
                 else
                 {
-                    StatusStripUpdate("No Object can be exported.");
+                    StatusStripUpdate("No Object selected for export.");
                 }
             });
         }
@@ -661,18 +661,18 @@ namespace AssetStudioGUI
                 }
                 if (Properties.Settings.Default.openAfterExport)
                 {
-                    Process.Start(Path.GetDirectoryName(exportPath));
+                    OpenFolderInExplorer(Path.GetDirectoryName(exportPath));
                 }
             });
         }
 
         public static void GetSelectedParentNode(TreeNodeCollection nodes, List<GameObject> gameObjects)
         {
-            foreach (GameObjectTreeNode i in nodes)
+            foreach (TreeNode i in nodes)
             {
-                if (i.Checked)
+                if (i is GameObjectTreeNode gameObjectTreeNode && i.Checked)
                 {
-                    gameObjects.Add(i.gameObject);
+                    gameObjects.Add(gameObjectTreeNode.gameObject);
                 }
                 else
                 {
@@ -708,6 +708,13 @@ namespace AssetStudioGUI
                 str = m_MonoBehaviour.Dump(type);
             }
             return str;
+        }
+
+        public static void OpenFolderInExplorer(string path)
+        {
+            var info = new ProcessStartInfo(path);
+            info.UseShellExecute = true;
+            Process.Start(info);
         }
     }
 }

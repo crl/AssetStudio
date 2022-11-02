@@ -1,5 +1,4 @@
 ﻿using AssetStudio;
-using AssetStudio.hpf;
 using Newtonsoft.Json;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
@@ -7,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
@@ -18,19 +16,24 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using AssetStudio.hpf;
 using static AssetStudioGUI.Studio;
 using Font = AssetStudio.Font;
-using ImageFormat = AssetStudio.ImageFormat;
-using PixelFormat = System.Drawing.Imaging.PixelFormat;
+#if NET472
 using Vector3 = OpenTK.Vector3;
 using Vector4 = OpenTK.Vector4;
+#else
+using Vector3 = OpenTK.Mathematics.Vector3;
+using Vector4 = OpenTK.Mathematics.Vector4;
+using Matrix4 = OpenTK.Mathematics.Matrix4;
+#endif
 
 namespace AssetStudioGUI
 {
     partial class AssetStudioGUIForm : Form
     {
         private AssetItem lastSelectedItem;
-        private Bitmap imageTexture;
+        private DirectBitmap imageTexture;
         private string tempClipboard;
 
         private FMOD.System system;
@@ -83,13 +86,16 @@ namespace AssetStudioGUI
         private int nextGObject;
         private List<TreeNode> treeSrcResults = new List<TreeNode>();
 
+        private string openDirectoryBackup = string.Empty;
+        private string saveDirectoryBackup = string.Empty;
+
+        private GUILogger logger;
+
         [DllImport("gdi32.dll")]
         private static extern IntPtr AddFontMemResourceEx(IntPtr pbFont, uint cbFont, IntPtr pdv, [In] ref uint pcFonts);
 
-        private string[] args;
-        public AssetStudioGUIForm(string[] args)
+        public AssetStudioGUIForm()
         {
-            this.args = args;
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             InitializeComponent();
             Text = $"AssetStudioGUI v{Application.ProductVersion}";
@@ -100,9 +106,19 @@ namespace AssetStudioGUI
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
             FMODinit();
 
-            Logger.Default = new GUILogger(StatusStripUpdate);
-            Progress.Default = new GUIProgress(SetProgressBarValue);
+            logger = new GUILogger(StatusStripUpdate);
+            Logger.Default = logger;
+            Progress.Default = new Progress<int>(SetProgressBarValue);
             Studio.StatusStripUpdate = StatusStripUpdate;
+
+
+            AddEnvironmentPaths(new[] { "libs" });
+        }
+        internal static void AddEnvironmentPaths(IEnumerable<string> paths)
+        {
+            var path = new[] { Environment.GetEnvironmentVariable("PATH") ?? string.Empty };
+            string newPath = string.Join(Path.PathSeparator.ToString(), path.Concat(paths));
+            Environment.SetEnvironmentVariable("PATH", newPath);   // 这种方式只会修改当前进程的环境变量
         }
 
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
@@ -119,25 +135,47 @@ namespace AssetStudioGUI
             if (paths.Length > 0)
             {
                 ResetForm();
-
+                assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
                 if (paths.Length == 1 && Directory.Exists(paths[0]))
                 {
                     await Task.Run(() => assetsManager.LoadFolder(paths[0]));
                 }
                 else
                 {
+                    var result = new List<string>();
+                    foreach (var path in paths)
+                    {
+                        var ex = Path.GetExtension(path).ToLower();
+                        if (ex == ".hpf")
+                        {
+                            await Task.Run(() => loadHPF(path));
+                            break;
+                        }else if (ex == ".lua")
+                        {
+                            await Task.Run(() => loadLua(path));
+                            break;
+                        }
+                        result.Add(path);
+                    }
+
+                    if (result.Count > 0)
+                    {
+                        paths = result.ToArray();
                     await Task.Run(() => assetsManager.LoadFiles(paths));
                 }
-
+                }
                 BuildAssetStructures();
             }
         }
 
         private async void loadFile_Click(object sender, EventArgs e)
         {
-            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            openFileDialog1.InitialDirectory = openDirectoryBackup;
+            if (openFileDialog1.ShowDialog(this) == DialogResult.OK)
             {
                 ResetForm();
+                openDirectoryBackup = Path.GetDirectoryName(openFileDialog1.FileNames[0]);
+                assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
                 await Task.Run(() => assetsManager.LoadFiles(openFileDialog1.FileNames));
                 BuildAssetStructures();
             }
@@ -146,55 +184,20 @@ namespace AssetStudioGUI
         private async void loadFolder_Click(object sender, EventArgs e)
         {
             var openFolderDialog = new OpenFolderDialog();
+            openFolderDialog.InitialFolder = openDirectoryBackup;
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
             {
                 ResetForm();
+                openDirectoryBackup = openFolderDialog.Folder;
+                assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
                 await Task.Run(() => assetsManager.LoadFolder(openFolderDialog.Folder));
                 BuildAssetStructures();
             }
         }
 
-        private async void loadHPFFolder_Click(object sender, EventArgs e)
+        private async void extractFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var openFolderDialog = new OpenFolderDialog();
-            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                ResetForm();
-
-                await Task.Run(() => HPFHelper.RunFolder(openFolderDialog.Folder));
-            }
-        }
-
-        private async void loadHPF_Click(object sender, EventArgs e)
-        {
-            var openFileDialog = new OpenFileDialog();
-            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                ResetForm();
-                var file = openFileDialog.FileName;
-                var folder = Path.GetDirectoryName(file);
-                var savePrefix = Path.Combine(folder, "exports");
-
-
-                var item = file.Replace("\\", "/");
-                var name = Path.GetFileNameWithoutExtension(item);
-                var savePath = Path.Combine(savePrefix, name).Replace("\\", "/");
-
-                if (Directory.Exists(savePath))
-                {
-                    Directory.Delete(savePath,true);
-                }
-
-
-                await Task.Run(() => HPFHelper.RunFile(openFileDialog.FileName));
-                await Task.Run(() => assetsManager.LoadFolder(savePath));
-                BuildAssetStructures();
-            }
-        }
-
-        private async void extractFileToolStripMenuItem_ClickAsync(object sender, EventArgs e)
-        {
-            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            if (openFileDialog1.ShowDialog(this) == DialogResult.OK)
             {
                 var saveFolderDialog = new OpenFolderDialog();
                 saveFolderDialog.Title = "Select the save folder";
@@ -227,38 +230,37 @@ namespace AssetStudioGUI
 
         private async void BuildAssetStructures()
         {
-            if (assetsManager.assetsFileList.Count == 0)
+            var len = assetsManager.assetsFileList.Count;
+            if (len== 0)
             {
-                StatusStripUpdate("No file was loaded.");
+                StatusStripUpdate("No Unity file can be loaded.");
                 return;
             }
 
             (var productName, var treeNodeCollection) = await Task.Run(() => BuildAssetData());
             var typeMap = await Task.Run(() => BuildClassStructure());
 
-            if (!string.IsNullOrEmpty(productName))
+            var firstAssetsFile = assetsManager.assetsFileList[0];
+            if (string.IsNullOrEmpty(productName))
             {
-                Text = $"AssetStudioGUI v{Application.ProductVersion} - {productName} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
+                if (len == 1)
+                {
+                    var name = Path.GetFileNameWithoutExtension(firstAssetsFile.originalPath);
+                    productName = $"{name}({firstAssetsFile.fileName})";
             }
             else
             {
-                Text = $"AssetStudioGUI v{Application.ProductVersion} - (.) - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
+                    productName = "no name";
             }
+            }
+
+            Text = $"AssetStudioGUI v{Application.ProductVersion} - {productName} - {firstAssetsFile.unityVersion} - {firstAssetsFile.m_TargetPlatform}";
 
             assetListView.VirtualListSize = visibleAssets.Count;
 
-            if (sceneTreeView != null)
-            {
-                sceneTreeView.BeginUpdate();
-                sceneTreeView.Nodes.AddRange(treeNodeCollection.ToArray());
-                foreach (var node in treeNodeCollection)
-                {
-                    node.HideCheckBox();
-                }
-
-                sceneTreeView.EndUpdate();
-            }
-
+            sceneTreeView.BeginUpdate();
+            sceneTreeView.Nodes.AddRange(treeNodeCollection.ToArray());
+            sceneTreeView.EndUpdate();
             treeNodeCollection.Clear();
 
             classesListView.BeginUpdate();
@@ -320,7 +322,7 @@ namespace AssetStudioGUI
 
         private void AssetStudioForm_KeyDown(object sender, KeyEventArgs e)
         {
-            if (glControl1 != null && glControl1.Visible)
+            if (glControl1.Visible)
             {
                 if (e.Control)
                 {
@@ -345,7 +347,7 @@ namespace AssetStudioGUI
                     }
                 }
             }
-            else if (previewPanel != null && previewPanel.Visible)
+            else if (previewPanel.Visible)
             {
                 if (e.Control)
                 {
@@ -397,7 +399,7 @@ namespace AssetStudioGUI
                         var versionPath = Path.Combine(savePath, item.Group.Header);
                         Directory.CreateDirectory(versionPath);
 
-                        var saveFile = $"{versionPath}\\{item.SubItems[1].Text} {item.Text}.txt";
+                        var saveFile = $"{versionPath}{Path.DirectorySeparatorChar}{item.SubItems[1].Text} {item.Text}.txt";
                         File.WriteAllText(saveFile, item.ToString());
 
                         Progress.Report(++i, count);
@@ -425,7 +427,7 @@ namespace AssetStudioGUI
                         {
                             if (enablePreview.Checked && imageTexture != null)
                             {
-                                previewPanel.BackgroundImage = imageTexture;
+                                previewPanel.BackgroundImage = imageTexture.Bitmap;
                             }
                             else
                             {
@@ -493,7 +495,7 @@ namespace AssetStudioGUI
         private void showExpOpt_Click(object sender, EventArgs e)
         {
             var exportOpt = new ExportOptions();
-            exportOpt.ShowDialog();
+            exportOpt.ShowDialog(this);
         }
 
         private void assetListView_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
@@ -638,7 +640,7 @@ namespace AssetStudioGUI
             sortColumn = e.Column;
             assetListView.BeginUpdate();
             assetListView.SelectedIndices.Clear();
-            if (sortColumn == 5) //FullSize
+            if (sortColumn == 4) //FullSize
             {
                 visibleAssets.Sort((a, b) =>
                 {
@@ -647,15 +649,6 @@ namespace AssetStudioGUI
                     return reverseSort ? bsf.CompareTo(asf) : asf.CompareTo(bsf);
                 });
             }
-            /*else if (sortColumn == 4) // PathID
-            {
-                visibleAssets.Sort((x, y) =>
-                {
-                    string pathID_X = x.ab_hash;
-                    string pathID_Y = y.ab_hash;
-                    return reverseSort ? pathID_Y.CompareTo(pathID_X) : pathID_X.CompareTo(pathID_Y);
-                });
-            }*/
             else if (sortColumn == 3) // PathID
             {
                 visibleAssets.Sort((x, y) =>
@@ -687,10 +680,7 @@ namespace AssetStudioGUI
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             FMODpanel.Visible = false;
-            if (glControl1 != null)
-            {
-                glControl1.Visible = false;
-            }
+            glControl1.Visible = false;
             StatusStripUpdate("");
 
             FMODreset();
@@ -800,10 +790,11 @@ namespace AssetStudioGUI
 
         private void PreviewTexture2D(AssetItem assetItem, Texture2D m_Texture2D)
         {
-            var stream = m_Texture2D.ConvertToStream(ImageFormat.Png, true);
-            if (stream != null)
+            var image = m_Texture2D.ConvertToImage(true);
+            if (image != null)
             {
-                var bitmap = new Bitmap(stream);
+                var bitmap = new DirectBitmap(image.ConvertToBytes(), m_Texture2D.m_Width, m_Texture2D.m_Height);
+                image.Dispose();
                 assetItem.InfoText = $"Width: {m_Texture2D.m_Width}\nHeight: {m_Texture2D.m_Height}\nFormat: {m_Texture2D.m_TextureFormat}";
                 switch (m_Texture2D.m_TextureSettings.m_FilterMode)
                 {
@@ -831,13 +822,11 @@ namespace AssetStudioGUI
                     assetItem.InfoText += "None";
                 if (validChannel != 4)
                 {
-                    var bmpData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
-                    var bytes = new byte[bitmap.Width * bitmap.Height * 4];
-                    Marshal.Copy(bmpData.Scan0, bytes, 0, bytes.Length);
-                    for (int i = 0; i < bmpData.Height; i++)
+                    var bytes = bitmap.Bits;
+                    for (int i = 0; i < bitmap.Height; i++)
                     {
-                        int offset = Math.Abs(bmpData.Stride) * i;
-                        for (int j = 0; j < bmpData.Width; j++)
+                        int offset = Math.Abs(bitmap.Stride) * i;
+                        for (int j = 0; j < bitmap.Width; j++)
                         {
                             bytes[offset] = textureChannels[0] ? bytes[offset] : validChannel == 1 && textureChannels[3] ? byte.MaxValue : byte.MinValue;
                             bytes[offset + 1] = textureChannels[1] ? bytes[offset + 1] : validChannel == 1 && textureChannels[3] ? byte.MaxValue : byte.MinValue;
@@ -846,8 +835,6 @@ namespace AssetStudioGUI
                             offset += 4;
                         }
                     }
-                    Marshal.Copy(bytes, 0, bmpData.Scan0, bytes.Length);
-                    bitmap.UnlockBits(bmpData);
                 }
                 PreviewTexture(bitmap);
 
@@ -867,40 +854,40 @@ namespace AssetStudioGUI
             {
                 switch (m_AudioClip.m_Type)
                 {
-                    case AudioType.ACC:
+                    case FMODSoundType.ACC:
                         assetItem.InfoText += "Acc";
                         break;
-                    case AudioType.AIFF:
+                    case FMODSoundType.AIFF:
                         assetItem.InfoText += "AIFF";
                         break;
-                    case AudioType.IT:
+                    case FMODSoundType.IT:
                         assetItem.InfoText += "Impulse tracker";
                         break;
-                    case AudioType.MOD:
+                    case FMODSoundType.MOD:
                         assetItem.InfoText += "Protracker / Fasttracker MOD";
                         break;
-                    case AudioType.MPEG:
+                    case FMODSoundType.MPEG:
                         assetItem.InfoText += "MP2/MP3 MPEG";
                         break;
-                    case AudioType.OGGVORBIS:
+                    case FMODSoundType.OGGVORBIS:
                         assetItem.InfoText += "Ogg vorbis";
                         break;
-                    case AudioType.S3M:
+                    case FMODSoundType.S3M:
                         assetItem.InfoText += "ScreamTracker 3";
                         break;
-                    case AudioType.WAV:
+                    case FMODSoundType.WAV:
                         assetItem.InfoText += "Microsoft WAV";
                         break;
-                    case AudioType.XM:
+                    case FMODSoundType.XM:
                         assetItem.InfoText += "FastTracker 2 XM";
                         break;
-                    case AudioType.XMA:
+                    case FMODSoundType.XMA:
                         assetItem.InfoText += "Xbox360 XMA";
                         break;
-                    case AudioType.VAG:
+                    case FMODSoundType.VAG:
                         assetItem.InfoText += "PlayStation Portable ADPCM";
                         break;
-                    case AudioType.AUDIOQUEUE:
+                    case FMODSoundType.AUDIOQUEUE:
                         assetItem.InfoText += "iPhone";
                         break;
                     default:
@@ -924,7 +911,7 @@ namespace AssetStudioGUI
                     case AudioCompressionFormat.MP3:
                         assetItem.InfoText += "MP3";
                         break;
-                    case AudioCompressionFormat.VAG:
+                    case AudioCompressionFormat.PSMVAG:
                         assetItem.InfoText += "PlayStation Portable ADPCM";
                         break;
                     case AudioCompressionFormat.HEVAG:
@@ -1211,10 +1198,11 @@ namespace AssetStudioGUI
 
         private void PreviewSprite(AssetItem assetItem, Sprite m_Sprite)
         {
-            var stream = m_Sprite.GetImage(ImageFormat.Png);
-            if (stream != null)
+            var image = m_Sprite.GetImage();
+            if (image != null)
             {
-                var bitmap = new Bitmap(stream);
+                var bitmap = new DirectBitmap(image.ConvertToBytes(), image.Width, image.Height);
+                image.Dispose();
                 assetItem.InfoText = $"Width: {bitmap.Width}\nHeight: {bitmap.Height}\n";
                 PreviewTexture(bitmap);
             }
@@ -1224,11 +1212,11 @@ namespace AssetStudioGUI
             }
         }
 
-        private void PreviewTexture(Bitmap bitmap)
+        private void PreviewTexture(DirectBitmap bitmap)
         {
             imageTexture?.Dispose();
             imageTexture = bitmap;
-            previewPanel.BackgroundImage = imageTexture;
+            previewPanel.BackgroundImage = imageTexture.Bitmap;
             if (imageTexture.Width > previewPanel.Width || imageTexture.Height > previewPanel.Height)
                 previewPanel.BackgroundImageLayout = ImageLayout.Zoom;
             else
@@ -1272,27 +1260,20 @@ namespace AssetStudioGUI
             assemblyLoader.Clear();
             exportableAssets.Clear();
             visibleAssets.Clear();
-            if (sceneTreeView != null)
-            {
-                sceneTreeView.Nodes.Clear();
-            }
-
+            sceneTreeView.Nodes.Clear();
             assetListView.VirtualListSize = 0;
             assetListView.Items.Clear();
             classesListView.Items.Clear();
             classesListView.Groups.Clear();
             previewPanel.BackgroundImage = Properties.Resources.preview;
             imageTexture?.Dispose();
+            imageTexture = null;
             previewPanel.BackgroundImageLayout = ImageLayout.Center;
             assetInfoLabel.Visible = false;
             assetInfoLabel.Text = null;
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
-            if (glControl1 != null)
-            {
-                glControl1.Visible = false;
-            }
-
+            glControl1.Visible = false;
             lastSelectedItem = null;
             sortColumn = -1;
             reverseSort = false;
@@ -1373,9 +1354,11 @@ namespace AssetStudioGUI
             if (animator != null)
             {
                 var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
                 if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    var exportPath = saveFolderDialog.Folder + "\\Animator\\";
+                    saveDirectoryBackup = saveFolderDialog.Folder;
+                    var exportPath = Path.Combine(saveFolderDialog.Folder, "Animator") + Path.DirectorySeparatorChar;
                     ExportAnimatorWithAnimationClip(animator, animationList, exportPath);
                 }
             }
@@ -1396,9 +1379,11 @@ namespace AssetStudioGUI
             if (sceneTreeView.Nodes.Count > 0)
             {
                 var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
                 if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    var exportPath = saveFolderDialog.Folder + "\\GameObject\\";
+                    saveDirectoryBackup = saveFolderDialog.Folder;
+                    var exportPath = Path.Combine(saveFolderDialog.Folder, "GameObject") + Path.DirectorySeparatorChar;
                     List<AssetItem> animationList = null;
                     if (animation)
                     {
@@ -1433,23 +1418,32 @@ namespace AssetStudioGUI
             {
                 var gameObjects = new List<GameObject>();
                 GetSelectedParentNode(sceneTreeView.Nodes, gameObjects);
-                var saveFileDialog = new SaveFileDialog();
-                saveFileDialog.FileName = gameObjects[0].m_Name + " (merge).fbx";
-                saveFileDialog.AddExtension = false;
-                saveFileDialog.Filter = "Fbx file (*.fbx)|*.fbx";
-                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                if (gameObjects.Count > 0)
                 {
-                    var exportPath = saveFileDialog.FileName;
-                    List<AssetItem> animationList = null;
-                    if (animation)
+                    var saveFileDialog = new SaveFileDialog();
+                    saveFileDialog.FileName = gameObjects[0].m_Name + " (merge).fbx";
+                    saveFileDialog.AddExtension = false;
+                    saveFileDialog.Filter = "Fbx file (*.fbx)|*.fbx";
+                    saveFileDialog.InitialDirectory = saveDirectoryBackup;
+                    if (saveFileDialog.ShowDialog(this) == DialogResult.OK)
                     {
-                        animationList = GetSelectedAssets().Where(x => x.Type == ClassIDType.AnimationClip).ToList();
-                        if (animationList.Count == 0)
+                        saveDirectoryBackup = Path.GetDirectoryName(saveFileDialog.FileName);
+                        var exportPath = saveFileDialog.FileName;
+                        List<AssetItem> animationList = null;
+                        if (animation)
                         {
-                            animationList = null;
+                            animationList = GetSelectedAssets().Where(x => x.Type == ClassIDType.AnimationClip).ToList();
+                            if (animationList.Count == 0)
+                            {
+                                animationList = null;
+                            }
                         }
+                        ExportObjectsMergeWithAnimationClip(exportPath, gameObjects, animationList);
                     }
-                    ExportObjectsMergeWithAnimationClip(exportPath, gameObjects, animationList);
+                }
+                else
+                {
+                    StatusStripUpdate("No Object selected for export.");
                 }
             }
         }
@@ -1529,8 +1523,10 @@ namespace AssetStudioGUI
             if (sceneTreeView.Nodes.Count > 0)
             {
                 var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
                 if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
                 {
+                    saveDirectoryBackup = saveFolderDialog.Folder;
                     var savePath = saveFolderDialog.Folder + Path.DirectorySeparatorChar;
                     ExportSplitObjects(savePath, sceneTreeView.Nodes);
                 }
@@ -1589,10 +1585,11 @@ namespace AssetStudioGUI
             if (exportableAssets.Count > 0)
             {
                 var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
                 if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
                 {
                     timer.Stop();
-
+                    saveDirectoryBackup = saveFolderDialog.Folder;
                     List<AssetItem> toExportAssets = null;
                     switch (type)
                     {
@@ -1622,10 +1619,11 @@ namespace AssetStudioGUI
             if (exportableAssets.Count > 0)
             {
                 var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
                 if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
                 {
                     timer.Stop();
-
+                    saveDirectoryBackup = saveFolderDialog.Folder;
                     List<AssetItem> toExportAssets = null;
                     switch (type)
                     {
@@ -2084,14 +2082,78 @@ namespace AssetStudioGUI
             }
         }
 
+        private void toolStripMenuItem15_Click(object sender, EventArgs e)
+        {
+            logger.ShowErrorMessage = toolStripMenuItem15.Checked;
+        }
+
         private void extractHPFToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            loadHPF_Click(sender, e);
+        }
+
+        private void extractHPFFolderToolStripMenuItem_Click(object sender, EventArgs e)
         {
             loadHPFFolder_Click(sender, e);
         }
 
-        private void extractHPFToolStripMenuItem1_Click(object sender, EventArgs e)
+        private async void loadHPFFolder_Click(object sender, EventArgs e)
         {
-            loadHPF_Click(sender, e);
+            var openFolderDialog = new OpenFolderDialog();
+            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                ResetForm();
+
+                await Task.Run(() => HPFHelper.RunFolder(openFolderDialog.Folder));
+            }
+        }
+
+        private async void loadHPF_Click(object sender, EventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog();
+            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                ResetForm();
+                var file = openFileDialog.FileName;
+                await Task.Run(() => loadHPF(file));
+
+                BuildAssetStructures();
+            }
+        }
+
+        private void loadHPF(string file)
+        {
+            var folder = Path.GetDirectoryName(file);
+            var savePrefix = Path.Combine(folder, "exports");
+
+
+            var item = file.Replace("\\", "/");
+            var name = Path.GetFileNameWithoutExtension(item);
+            var savePath = Path.Combine(savePrefix, name).Replace("\\", "/");
+
+            if (Directory.Exists(savePath))
+            {
+                Directory.Delete(savePath, true);
+            }
+
+            HPFHelper.RunFile(file);
+            assetsManager.LoadFolder(savePath);
+        }
+
+        private void loadLua(string file)
+        {
+            LuaHelper.Single(file);
+        }
+
+        private async void decodeLuaToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var openFolderDialog = new OpenFolderDialog();
+            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                ResetForm();
+
+                await Task.Run(() => LuaHelper.RunFolder(openFolderDialog.Folder));
+            }
         }
 
         private void glControl1_MouseWheel(object sender, MouseEventArgs e)

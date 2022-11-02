@@ -6,14 +6,9 @@ using System.Threading.Tasks;
 
 namespace AssetStudio
 {
-    public enum FileType
+    public enum EndianType
     {
-        AssetsFile,
-        BundleFile,
-        WebFile,
-        ResourceFile,
-        GZipFile,
-        BrotliFile,
-        ZipFile
+        LittleEndian,
+        BigEndian
     }
 }
