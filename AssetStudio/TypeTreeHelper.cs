@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Data;
 using System.IO;
 using System.Text;
 
@@ -7,6 +8,8 @@ namespace AssetStudio
 {
     public static class TypeTreeHelper
     {
+        public static char[] HexToLiteral =new char[]{'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'
+        };
         public static string ReadTypeString(TypeTree m_Type, ObjectReader reader)
         {
             reader.Reset();
@@ -82,6 +85,31 @@ namespace AssetStudio
                     var str = reader.ReadAlignedString();
                     sb.AppendFormat("{0}{1} {2} = \"{3}\"\r\n", (new string('\t', level)), varTypeStr, varNameStr, str);
                     i += 3;
+                    break;
+
+                case "GUID":
+                    var cls = GetNodes(m_Nodes, i);
+                    i += cls.Count - 1;
+                    var data = new uint[4];
+                    data[0] = reader.ReadUInt32();
+                    data[1] = reader.ReadUInt32();
+                    data[2] = reader.ReadUInt32();
+                    data[3] = reader.ReadUInt32();
+
+                    var str1 = new StringBuilder();
+                    for (int j = 0; j < 4; j++)
+                    {
+                        for (int k = 0; k < 8; k++)
+                        {
+                            var cur = data[j];
+                            cur >>= (k * 4);
+                            cur &= 0xF;
+
+                            str1.Append(HexToLiteral[cur]);
+                        }
+                    }
+
+                    value = str1.ToString();
                     break;
                 case "map":
                     {
@@ -259,6 +287,30 @@ namespace AssetStudio
                         i += 2;
                         break;
                     }
+                case "GUID":
+                    var cls = GetNodes(m_Nodes, i);
+                    i += cls.Count - 1;
+                    var data = new uint[4];
+                    data[0] = reader.ReadUInt32();
+                    data[1] = reader.ReadUInt32();
+                    data[2] = reader.ReadUInt32();
+                    data[3] = reader.ReadUInt32();
+
+                    var sb = new StringBuilder();
+                    for (int j = 0; j < 4; j++)
+                    {
+                        for (int k = 0; k < 8; k++)
+                        {
+                            var cur = data[j];
+                            cur >>=(k*4);
+                            cur &= 0xF;
+
+                            sb.Append(HexToLiteral[cur]);
+                        }
+                    }
+
+                    value = sb.ToString();
+                    break;
                 default:
                     {
                         if (i < m_Nodes.Count - 1 && m_Nodes[i + 1].m_Type == "Array") //Array
