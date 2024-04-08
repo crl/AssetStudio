@@ -274,6 +274,23 @@ namespace AssetStudioGUI
             return false;
         }
 
+        public static bool ExportType(AssetItem item, string exportPath)
+        {
+            var type = item.Asset.ToType();
+
+            if (type == null)
+            {
+                return ExportRawFile(item, exportPath);
+            }
+
+            if (!TryExportFile(exportPath, item, ".json", out var exportFullPath))
+                return false;
+
+            var str = JsonConvert.SerializeObject(type, Formatting.Indented);
+            File.WriteAllText(exportFullPath, str);
+            return true;
+        }
+
         public static bool ExportAnimator(AssetItem item, string exportPath, List<AssetItem> animationList = null)
         {
             var exportFullPath = Path.Combine(exportPath, item.Text, item.Text + ".fbx");
@@ -371,6 +388,9 @@ namespace AssetStudioGUI
                     return ExportAnimator(item, exportPath);
                 case ClassIDType.AnimationClip:
                     return false;
+
+                case ClassIDType.AssetDatabaseV1:
+                    return ExportType(item, exportPath);
                 default:
                     return ExportRawFile(item, exportPath);
             }
