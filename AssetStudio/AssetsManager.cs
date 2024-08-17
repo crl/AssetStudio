@@ -415,7 +415,9 @@ namespace AssetStudio
                 foreach (var objectInfo in assetsFile.m_Objects)
                 {
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo);
+#if RELEASE
                     try
+#endif
                     {
                         Object obj;
                         switch (objectReader.type)
@@ -510,6 +512,7 @@ namespace AssetStudio
                         }
                         assetsFile.AddObject(obj);
                     }
+                    #if RELEASE
                     catch (Exception e)
                     {
                         var sb = new StringBuilder();
@@ -521,7 +524,7 @@ namespace AssetStudio
                             .Append(e);
                         Logger.Error(sb.ToString());
                     }
-
+#endif
                     Progress.Report(++i, progressCount);
                 }
             }

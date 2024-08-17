@@ -543,11 +543,6 @@ namespace AssetStudio
                     var m_KeepIndices = reader.ReadBoolean();
                 }
                 reader.AlignStream();
-                if (GameManager.Game.Name == "GI")
-                {
-                    var m_PackSkinDataToUV2UV3 = reader.ReadBoolean();
-                    reader.AlignStream();
-                }
 
                 //Unity fixed it in 2017.3.1p1 and later versions
                 if ((version[0] > 2017 || (version[0] == 2017 && version[1] >= 4)) || //2017.4
@@ -667,12 +662,6 @@ namespace AssetStudio
                 reader.AlignStream();
                 var m_BakedTriangleCollisionMesh = reader.ReadUInt8Array();
                 reader.AlignStream();
-
-                var name = GameManager.Game.Name;
-                if (name == "GI" | name == "BH3")
-                {
-                    var m_MeshOptimized = reader.ReadBoolean();
-                }
             }
 
             if (version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up

@@ -58,6 +58,13 @@ namespace AssetStudio
                     {
                         var m_RayTraceProcedural = reader.ReadByte();
                     }
+                    if (version[0] >= 6000) //6000 and up
+                    {
+                        var m_RayTracingAccelStructBuildFlagsOverride = reader.ReadByte();
+                        var m_RayTracingAccelStructBuildFlags = reader.ReadByte();
+                        var m_SmallMeshCulling=reader.ReadByte();
+
+                    }
                     reader.AlignStream();
                 }
                 else
@@ -145,6 +152,7 @@ namespace AssetStudio
                 else
                 {
                     var m_SortingLayerID = reader.ReadUInt32();
+                    var m_SortingLayer = reader.ReadInt16();
                 }
 
                 //SInt16 m_SortingLayer 5.6 and up
