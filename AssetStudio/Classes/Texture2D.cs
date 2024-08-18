@@ -65,6 +65,11 @@ namespace AssetStudio
 
         public Texture2D(ObjectReader reader) : base(reader)
         {
+            if (version[0] >= 2023)
+            {
+                var m_IsAlphaChannelOptional = reader.ReadBoolean();
+                reader.AlignStream();
+            }
             m_Width = reader.ReadInt32();
             m_Height = reader.ReadInt32();
             var m_CompleteImageSize = reader.ReadInt32();

@@ -150,7 +150,8 @@ namespace AssetStudioGUI
                         {
                             await Task.Run(() => loadHPF(path));
                             break;
-                        }else if (ex == ".lua")
+                        }
+                        else if (ex == ".lua")
                         {
                             await Task.Run(() => loadLua(path));
                             break;
@@ -161,8 +162,8 @@ namespace AssetStudioGUI
                     if (result.Count > 0)
                     {
                         paths = result.ToArray();
-                    await Task.Run(() => assetsManager.LoadFiles(paths));
-                }
+                        await Task.Run(() => assetsManager.LoadFiles(paths));
+                    }
                 }
                 BuildAssetStructures();
             }
@@ -231,7 +232,7 @@ namespace AssetStudioGUI
         private async void BuildAssetStructures()
         {
             var len = assetsManager.assetsFileList.Count;
-            if (len== 0)
+            if (len == 0)
             {
                 StatusStripUpdate("No Unity file can be loaded.");
                 return;
@@ -247,11 +248,11 @@ namespace AssetStudioGUI
                 {
                     var name = Path.GetFileNameWithoutExtension(firstAssetsFile.originalPath);
                     productName = $"{name}({firstAssetsFile.fileName})";
-            }
-            else
-            {
+                }
+                else
+                {
                     productName = "no name";
-            }
+                }
             }
 
             Text = $"AssetStudioGUI v{Application.ProductVersion} - {productName} - {firstAssetsFile.unityVersion} - {firstAssetsFile.m_TargetPlatform}";
@@ -2244,5 +2245,10 @@ namespace AssetStudioGUI
             }
         }
         #endregion
+
+        private void specifyUnityVersion_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
