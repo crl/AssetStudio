@@ -270,7 +270,7 @@
             // 
             specifyUnityVersion.Name = "specifyUnityVersion";
             specifyUnityVersion.Size = new System.Drawing.Size(100, 23);
-            specifyUnityVersion.Text = "6000.0.19f1";
+            specifyUnityVersion.Text = "2022.3.51f1c1";
             specifyUnityVersion.Click += specifyUnityVersion_Click;
             // 
             // showExpOpt

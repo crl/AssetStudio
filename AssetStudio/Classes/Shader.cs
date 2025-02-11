@@ -762,6 +762,29 @@ namespace AssetStudio
                     reader.AlignStream();
                 }
                 reader.AlignStream();
+            }else if (
+                (reader.serializedType.m_Type?.ContainsNamePath("m_PlayerSubPrograms.Array.data.Array.data") == true) // Auto-detect based on TypeTree
+                ||
+                (version[0] == 2021 && version[1] == 3 && version[2] >= 10) //2021.3.10 and up
+                ||
+                (version[0] == 2022 && version[1] > 1) ||
+                (version[0] == 2022 && version[1] == 1 && version[2] >= 13) //2022.1.13 and up
+                ||
+                (version[0] >= 2023) //2023 and up
+            ) 
+            {
+                var m_PlayerSubProgramsSize = reader.ReadInt32();
+                m_PlayerSubPrograms = new SerializedPlayerSubProgram[m_PlayerSubProgramsSize][];
+                for (int i = 0; i < m_PlayerSubProgramsSize; i++)
+                {
+                    var m_PlayerSubProgramsSizeSize = reader.ReadInt32();
+                    m_PlayerSubPrograms[i] = new SerializedPlayerSubProgram[m_PlayerSubProgramsSizeSize];
+                    for (int j = 0; j < m_PlayerSubProgramsSizeSize; j++)
+                    {
+                        m_PlayerSubPrograms[i][j] = new SerializedPlayerSubProgram(reader);
+                    }
+                }
+                m_ParameterBlobIndices = reader.ReadUInt32ArrayArray();
             }
 
             if ((version[0] == 2020 && version[1] > 3) ||
@@ -1090,9 +1113,18 @@ namespace AssetStudio
                     reader.AlignStream();
                 }
 
-                if (version[0] >= 6000)
+                if (
+                    (reader.serializedType.m_Type?.ContainsNamePath("Base.stageCounts.Array") == true)//Auto-detect based on TypeTree
+                    ||
+                    (version[0] == 2021 && version[1] == 3 && version[2] >= 12) //2021.3.12 and up
+                    ||
+                    (version[0] == 2022 && version[1] > 1) ||
+                    (version[0] == 2022 && version[1] == 1 && version[2] >= 21) //2022.1.21 and up
+                    ||
+                    (version[0] >= 2023) //2023 and up
+                ) 
                 {
-                    var m_StageCounts = reader.ReadUInt32Array();
+                    var stageCounts = reader.ReadUInt32Array();
                 }
 
                 var m_DependenciesCount = reader.ReadInt32();
